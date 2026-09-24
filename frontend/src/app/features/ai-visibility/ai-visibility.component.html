@@ -1,0 +1,186 @@
+<div class="intel-page" [attr.aria-busy]="status() === 'loading'">
+  <app-page-header
+    title="AI Visibility"
+    description="How often AI responses mention, cite, and align with this brand. Read from saved audit analysis."
+  >
+    @if (status() === 'ready' && page(); as data) {
+      <app-audit-select
+        labelId="ai-visibility-audit"
+        [audits]="data.audits"
+        [selectedId]="data.audit.id"
+        (changed)="onAuditChange($event)"
+      />
+    }
+  </app-page-header>
+
+  @if (status() === 'loading') {
+    <div class="intel-skeleton" role="status" aria-label="Loading AI Visibility">
+      <p class="visually-hidden">Loading AI Visibility</p>
+      <div class="intel-skeleton__stats">
+        @for (card of [1, 2, 3, 4]; track card) {
+          <div class="intel-skeleton__card">
+            <span class="skeleton__line skeleton__line--sm"></span>
+            <span class="skeleton__line skeleton__line--lg"></span>
+          </div>
+        }
+      </div>
+    </div>
+  } @else if (status() === 'error') {
+    <app-error-state
+      title="Unable to load AI Visibility"
+      [message]="errorMessage()"
+      retryLabel="Try again"
+      (retry)="load()"
+    />
+    @if (httpStatus() === 404) {
+      <p class="intel-recovery">
+        <a routerLink="/ai-visibility">Show your latest audit</a>
+      </p>
+    }
+  } @else if (!page()) {
+    <app-empty-state
+      icon="visibility"
+      title="No audits to review yet"
+      description="Create a brand and run an audit. AI Visibility reads queries and scores that have already been saved."
+    >
+      <a appButton variant="primary" routerLink="/brands">Open brands</a>
+    </app-empty-state>
+  } @else {
+    @if (page(); as data) {
+    <section class="intel-context" aria-label="Selected audit">
+      <div>
+        <p class="intel-kicker">Brand</p>
+        <p class="intel-context__value">{{ data.audit.brand_name }}</p>
+      </div>
+      <div>
+        <p class="intel-kicker">Audit date</p>
+        <p class="intel-context__value">{{ auditDate(data.audit) }}</p>
+      </div>
+      <div>
+        <p class="intel-kicker">AI Visibility</p>
+        <p class="intel-context__value">
+          <app-score [value]="data.visibility.overall_score" />
+        </p>
+      </div>
+      <div class="intel-context__actions">
+        <app-badge [tone]="statusTone(data.visibility.status)">{{ statusLabel(data.visibility.status) }}</app-badge>
+        <a appButton variant="secondary" [routerLink]="['/audits', data.audit.id]">Open audit</a>
+      </div>
+    </section>
+
+    @if (!hasQueries(data)) {
+      <div class="intel-section">
+        <app-empty-state
+          icon="query"
+          title="No AI analysis yet"
+          description="This audit does not have AI queries or responses yet. Generate them from the audit, then calculate AI Visibility. This page does not run that analysis."
+        >
+          <a appButton variant="primary" [routerLink]="['/audits', data.audit.id]">Open audit</a>
+        </app-empty-state>
+      </div>
+    } @else {
+      <section class="intel-stats" aria-label="AI Visibility metrics">
+        <app-stat-card label="Mention Rate" [value]="rate(data.visibility.metrics.mention_rate)" />
+        <app-stat-card label="Citation Rate" [value]="rate(data.visibility.metrics.citation_rate)" />
+        <app-stat-card label="Position" [value]="position(data.visibility.metrics.average_position)" />
+        <app-stat-card label="Semantic Match" [value]="score(data.visibility.metrics.semantic_score)" />
+      </section>
+
+      @if (data.visibility.note) {
+        <p class="intel-copy" role="status">{{ data.visibility.note }}</p>
+      }
+      @if (data.visibility.metrics.semantic_alignment !== null) {
+        <p class="intel-copy">
+          Lexical semantic alignment: {{ alignment(data.visibility.metrics.semantic_alignment) }}.
+          Position score: {{ metricScore(data.visibility.metrics.position_score) }}.
+        </p>
+      }
+
+      <section class="intel-section" aria-labelledby="ai-visibility-meanings">
+        <h2 id="ai-visibility-meanings">What these metrics mean</h2>
+        <dl class="intel-defs">
+          <div>
+            <dt>Mention Rate</dt>
+            <dd>Share of successful AI responses that mention the brand.</dd>
+          </div>
+          <div>
+            <dt>Citation Rate</dt>
+            <dd>Share of successful responses where a citation was detected. Citation detection is heuristic.</dd>
+          </div>
+          <div>
+            <dt>Position</dt>
+            <dd>
+              The brand's mention order within an AI response. It is not a search-engine ranking.
+              The card shows the average stored mention position.
+            </dd>
+          </div>
+          <div>
+            <dt>Semantic Match</dt>
+            <dd>
+              The stored semantic score. Semantic alignment in the current implementation is lexical overlap between the query and the response.
+            </dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="intel-section" aria-labelledby="ai-visibility-queries">
+        <h2 id="ai-visibility-queries">Query evidence</h2>
+        <p class="intel-copy">
+          A sample of saved queries for this audit.
+          @if (data.queryTotal > data.queries.length) {
+            Showing {{ data.queries.length }} of {{ data.queryTotal }}.
+          }
+        </p>
+        @if (data.queries.length === 0) {
+          <app-empty-state
+            [compact]="true"
+            [headingLevel]="3"
+            icon="query"
+            title="No saved queries in this sample"
+            description="Query Explorer lists every saved query for this audit."
+          />
+        } @else {
+          <div class="intel-table-wrap">
+            <table class="intel-table">
+              <caption class="visually-hidden">Sample of AI queries and responses</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Query</th>
+                  <th scope="col">Category</th>
+                  <th scope="col">Response status</th>
+                  <th scope="col">Brand mentioned</th>
+                  <th scope="col">Position</th>
+                  <th scope="col">Citation</th>
+                  <th scope="col">Semantic alignment</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of data.queries; track item.query_id) {
+                  <tr>
+                    <th class="intel-query" scope="row">{{ item.query_text }}</th>
+                    <td>{{ categoryName(item.category) }}</td>
+                    <td>
+                      <app-badge [tone]="item.has_response ? 'success' : 'warning'">
+                        {{ item.has_response ? 'Responded' : 'No response' }}
+                      </app-badge>
+                    </td>
+                    <td>{{ item.response ? yesNoLabel(item.response.brand_mentioned) : unavailable }}</td>
+                    <td>{{ item.response ? position(item.response.brand_position) : unavailable }}</td>
+                    <td>{{ item.response ? yesNoLabel(item.response.citation_found) : unavailable }}</td>
+                    <td>{{ item.response ? alignment(item.response.semantic_alignment) : unavailable }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+        <p class="intel-recovery">
+          <a [routerLink]="['/query-explorer']" [queryParams]="{ audit_id: data.audit.id }">
+            Open Query Explorer
+          </a>
+        </p>
+      </section>
+    }
+    }
+  }
+</div>

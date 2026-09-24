@@ -1,0 +1,103 @@
+<div class="intel-page" [attr.aria-busy]="status() === 'loading'">
+  <app-page-header
+    title="Recommendations"
+    description="Prioritized actions derived from the latest available audit intelligence."
+  >
+    @if (status() === 'ready' && page(); as data) {
+      <app-audit-select
+        labelId="recommendations-audit"
+        [audits]="data.audits"
+        [selectedId]="data.audit.id"
+        (changed)="onAuditChange($event)"
+      />
+    }
+  </app-page-header>
+
+  @if (status() === 'loading') {
+    <app-loading-state label="Loading recommendations" />
+  } @else if (status() === 'error') {
+    <app-error-state
+      title="Unable to load recommendations"
+      [message]="errorMessage()"
+      retryLabel="Try again"
+      (retry)="load()"
+    />
+    @if (httpStatus() === 404) {
+      <p class="intel-recovery">
+        <a routerLink="/recommendations">Show your latest audit</a>
+      </p>
+    }
+  } @else if (!page()) {
+    <app-empty-state
+      icon="recommendations"
+      title="No audits to review yet"
+      description="Recommendations are generated after audit analysis. Create a brand and run an audit first."
+    >
+      <a appButton variant="primary" routerLink="/brands">Open brands</a>
+    </app-empty-state>
+  } @else {
+    @if (page(); as data) {
+    <section class="intel-context" aria-label="Audit context">
+      <div>
+        <p class="intel-kicker">Brand</p>
+        <p class="intel-context__value">{{ data.audit.brand_name }}</p>
+      </div>
+      <div>
+        <p class="intel-kicker">Audit date</p>
+        <p class="intel-context__value">{{ auditDate(data.audit) }}</p>
+      </div>
+      <div>
+        <p class="intel-kicker">Source</p>
+        <p class="intel-context__value">Stored recommendations for this audit</p>
+      </div>
+      <div class="intel-context__actions">
+        <a appButton variant="secondary" [routerLink]="['/audits', data.audit.id]">Open audit</a>
+      </div>
+    </section>
+
+    @if (data.list.total === 0) {
+      <div class="intel-section">
+        <app-empty-state
+          icon="recommendations"
+          title="No recommendations yet"
+          description="Recommendations are generated after audit analysis. Calculate them from the audit page. This page only reads the saved list."
+        >
+          <a appButton variant="primary" [routerLink]="['/audits', data.audit.id]">Open audit</a>
+        </app-empty-state>
+      </div>
+    } @else {
+      <section class="intel-stats" aria-label="Recommendation counts">
+        <app-stat-card label="Total" [value]="'' + counts().total" />
+        <app-stat-card label="High priority" [value]="'' + counts().high" />
+        <app-stat-card label="Medium priority" [value]="'' + counts().medium" />
+        <app-stat-card label="Low priority" [value]="'' + counts().low" />
+      </section>
+
+      <ul class="seo-findings intel-section" aria-label="Recommendations">
+        @for (item of data.list.items; track item.id) {
+          <li class="seo-finding">
+            <div class="seo-finding__meta">
+              <app-badge [tone]="priorityBadge(item.priority)">{{ priorityName(item.priority) }}</app-badge>
+              <app-badge tone="neutral">{{ categoryName(item.category) }}</app-badge>
+            </div>
+            <h2 class="seo-finding__title">{{ item.title }}</h2>
+            @if (item.description) {
+              <p class="seo-finding__text">{{ item.description }}</p>
+            }
+            <dl class="ai-query__signals">
+              <div>
+                <dt>Impact</dt>
+                <dd>{{ score(item.impact_score) }}</dd>
+              </div>
+              <div>
+                <dt>Effort</dt>
+                <dd>{{ score(item.effort_score) }}</dd>
+              </div>
+            </dl>
+          </li>
+        }
+      </ul>
+    }
+    }
+  }
+</div>

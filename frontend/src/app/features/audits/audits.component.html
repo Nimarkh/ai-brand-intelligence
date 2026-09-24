@@ -1,0 +1,107 @@
+<div class="intel-page" [attr.aria-busy]="status() === 'loading'">
+  <app-page-header
+    title="Audits"
+    description="Historical website intelligence audits for the brands you own."
+  />
+
+  @if (status() === 'loading') {
+    <app-loading-state label="Loading audits" />
+  } @else if (status() === 'error') {
+    <app-error-state
+      title="Unable to load audits"
+      [message]="errorMessage()"
+      retryLabel="Try again"
+      (retry)="load()"
+    />
+  } @else if (rows().length === 0) {
+    <app-empty-state
+      icon="audits"
+      title="No audits yet"
+      description="An audit is created from a brand. Open a brand and start a website crawl to add the first audit to this history."
+    >
+      <a appButton variant="primary" routerLink="/brands">Open brands</a>
+    </app-empty-state>
+  } @else {
+    @if (truncated()) {
+      <p class="intel-copy" role="status">
+        Showing the 50 most recent audits for each brand.
+      </p>
+    }
+    <div class="intel-table-wrap">
+      <table class="intel-table">
+        <caption class="visually-hidden">Owned website intelligence audits</caption>
+        <thead>
+          <tr>
+            <th scope="col">Status</th>
+            <th scope="col">Brand</th>
+            <th scope="col">Created</th>
+            <th scope="col">Completed</th>
+            <th scope="col">Overall</th>
+            <th scope="col">Website health</th>
+            <th scope="col">SEO</th>
+            <th scope="col">AI visibility</th>
+            <th scope="col">Entity</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of rows(); track row.audit.id) {
+            <tr>
+              <td>
+                <app-badge [tone]="statusTone(row.audit.status)">{{ statusLabel(row.audit.status) }}</app-badge>
+              </td>
+              <th scope="row">
+                <a [routerLink]="['/audits', row.audit.id]">{{ row.brandName }}</a>
+              </th>
+              <td>{{ when(row.audit.created_at) }}</td>
+              <td>{{ when(row.audit.completed_at) }}</td>
+              <td>
+                <span class="intel-score">
+                  <app-score [value]="row.audit.overall_score" />
+                  @if (overallState(row.audit) === 'PROVISIONAL') {
+                    <app-badge tone="warning">Provisional</app-badge>
+                  } @else if (overallState(row.audit) === 'UNAVAILABLE') {
+                    <app-badge tone="neutral">Not calculated</app-badge>
+                  } @else {
+                    <app-badge tone="info">Available</app-badge>
+                  }
+                </span>
+              </td>
+              <td>
+                <span class="intel-score">
+                  <app-score [value]="row.audit.website_score" />
+                  @if (row.audit.website_score === null) {
+                    <app-badge tone="neutral">Not calculated</app-badge>
+                  }
+                </span>
+              </td>
+              <td>
+                <span class="intel-score">
+                  <app-score [value]="row.audit.seo_score" />
+                  @if (row.audit.seo_score === null) {
+                    <app-badge tone="neutral">Not calculated</app-badge>
+                  }
+                </span>
+              </td>
+              <td>
+                <span class="intel-score">
+                  <app-score [value]="row.audit.ai_visibility_score" />
+                  @if (row.audit.ai_visibility_score === null) {
+                    <app-badge tone="neutral">Not calculated</app-badge>
+                  }
+                </span>
+              </td>
+              <td>
+                <span class="intel-score">
+                  <app-score [value]="row.audit.entity_score" />
+                  @if (row.audit.entity_score === null) {
+                    <app-badge tone="neutral">Not calculated</app-badge>
+                  }
+                </span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

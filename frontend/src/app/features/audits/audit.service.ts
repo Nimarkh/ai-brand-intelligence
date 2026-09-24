@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
@@ -17,8 +17,14 @@ export class AuditService {
   private readonly http = inject(HttpClient);
   private readonly apiBaseUrl = environment.apiBaseUrl;
 
-  listAudits(brandId: string): Observable<AuditListResponse> {
-    return this.http.get<AuditListResponse>(`${this.apiBaseUrl}/brands/${brandId}/audits`);
+  listAudits(brandId: string, limit?: number): Observable<AuditListResponse> {
+    let params = new HttpParams();
+    if (limit !== undefined) {
+      params = params.set('limit', String(limit));
+    }
+    return this.http.get<AuditListResponse>(`${this.apiBaseUrl}/brands/${brandId}/audits`, {
+      params,
+    });
   }
 
   getAudit(auditId: string): Observable<AuditSummary> {

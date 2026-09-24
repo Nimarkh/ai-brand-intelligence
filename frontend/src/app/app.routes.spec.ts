@@ -18,13 +18,7 @@ const user: AuthUser = {
   full_name: 'Ada Lovelace',
 };
 
-const placeholderPaths = [
-  '/audits',
-  '/website-audit',
-  '/ai-visibility',
-  '/entity',
-  '/recommendations',
-];
+const placeholderPaths = ['/website-audit'];
 
 describe('application routes', () => {
   const shell = routes.find((route) => route.component === ShellComponent);
@@ -98,7 +92,7 @@ describe('application routes', () => {
       ],
     });
 
-    const harness = await RouterTestingHarness.create('/audits');
+    const harness = await RouterTestingHarness.create('/website-audit');
 
     for (const path of placeholderPaths) {
       await harness.navigateByUrl(path);

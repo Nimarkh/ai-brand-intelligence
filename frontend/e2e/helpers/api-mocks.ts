@@ -257,6 +257,74 @@ export async function mockAuthenticatedWorkspace(page: Page): Promise<void> {
         selected_audit_id: AUDIT.id,
       });
     }
+    if (path === `/audits/${AUDIT.id}/ai-visibility` && method === 'GET') {
+      return json(route, 200, {
+        audit_id: AUDIT.id,
+        status: 'AVAILABLE',
+        overall_score: 55,
+        metrics: {
+          mention_rate: 0.5,
+          citation_rate: 0.25,
+          average_position: 2,
+          position_score: 70,
+          semantic_alignment: 0.4,
+          semantic_score: 40,
+        },
+        components: {},
+        total_queries: 1,
+        successful_responses: 1,
+        failed_responses: 0,
+        response_coverage: 1,
+        note: null,
+      });
+    }
+    if (path === `/audits/${AUDIT.id}/entity` && method === 'GET') {
+      return json(route, 200, {
+        audit_id: AUDIT.id,
+        status: 'AVAILABLE',
+        overall_score: 60,
+        metrics: { canonical_consistency: 1 },
+        components: {
+          presence: 80,
+          consistency: 70,
+          structured_identity: 40,
+          ai_recognition: 50,
+        },
+        component_details: [],
+        evidence: {
+          analyzable_pages: 6,
+          pages_with_brand_in_title: 4,
+          pages_with_brand_in_meta: 3,
+          pages_with_canonical: 6,
+          pages_with_same_origin_canonical: 6,
+          pages_with_schema: 2,
+          pages_with_entity_schema: 1,
+          successful_ai_responses: 1,
+          responses_mentioning_brand: 1,
+          average_mention_position: 2,
+          brand_name: BRAND.name,
+          normalized_brand_name: 'fixture brand',
+          origin: 'https://fixture.test',
+        },
+        notes: [],
+      });
+    }
+    if (path === `/audits/${AUDIT.id}/recommendations` && method === 'GET') {
+      return json(route, 200, {
+        items: [
+          {
+            id: '55555555-5555-4555-8555-555555555555',
+            title: 'Add meta descriptions',
+            description: 'About page is missing a meta description.',
+            category: 'SEO',
+            priority: 'HIGH',
+            impact_score: 90,
+            effort_score: 20,
+          },
+        ],
+        total: 1,
+      });
+    }
     if (path === '/intelligence/ask' && method === 'POST') {
       return json(route, 200, {
         answer: 'The main SEO issue is a missing meta description on the About page.',

@@ -101,3 +101,37 @@ test.describe('Responsive', () => {
     });
   }
 });
+
+test.describe('Phase 24A intelligence pages', () => {
+  test('audits, AI visibility, entity, and recommendations load saved data', async ({ page }) => {
+    await mockAuthenticatedWorkspace(page);
+    await page.goto('/audits');
+    await expect(page.getByRole('heading', { name: 'Audits', exact: true })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Fixture Brand' })).toBeVisible();
+    await expect(page.getByText('72 / 100').first()).toBeVisible();
+
+    await page.goto('/ai-visibility');
+    await expect(page.getByRole('heading', { name: 'AI Visibility', exact: true })).toBeVisible();
+    await expect(page.getByRole('region', { name: 'AI Visibility metrics' }).getByText('Mention Rate')).toBeVisible();
+    await expect(page.getByText('Who is Fixture Brand?')).toBeVisible();
+
+    await page.goto('/entity');
+    await expect(page.getByRole('heading', { name: 'Entity Intelligence', exact: true })).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Entity components' }).getByText('Entity Presence')).toBeVisible();
+    await expect(page.getByText('not an external knowledge graph')).toBeVisible();
+
+    await page.goto('/recommendations');
+    await expect(page.getByRole('heading', { name: 'Recommendations', exact: true })).toBeVisible();
+    await expect(page.getByText('Add meta descriptions')).toBeVisible();
+    await expect(page.getByText('High priority').first()).toBeVisible();
+
+    await page.getByRole('button', { name: 'Switch to dark mode' }).click();
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+    await page.getByRole('button', { name: 'Switch to light mode' }).click();
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+
+    await page.setViewportSize({ width: 390, height: 800 });
+    await page.goto('/audits');
+    await expect(page.getByRole('heading', { name: 'Audits', exact: true })).toBeVisible();
+  });
+});

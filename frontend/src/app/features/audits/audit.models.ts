@@ -89,6 +89,52 @@ export interface AuditScoreResponse {
   note: string | null;
 }
 
+/** Short status for history lists. Crawl-progress copy stays in auditStatusLabel. */
+export function auditHistoryStatusLabel(status: AuditStatus): string {
+  switch (status) {
+    case 'PENDING':
+      return 'Pending';
+    case 'RUNNING':
+      return 'Running';
+    case 'COMPLETED':
+      return 'Completed';
+    case 'FAILED':
+      return 'Failed';
+  }
+}
+
+export function auditHistoryStatusTone(
+  status: AuditStatus,
+): 'success' | 'info' | 'warning' | 'danger' {
+  switch (status) {
+    case 'COMPLETED':
+      return 'success';
+    case 'RUNNING':
+      return 'info';
+    case 'FAILED':
+      return 'danger';
+    case 'PENDING':
+      return 'warning';
+  }
+}
+
+/**
+ * Availability of the stored overall score.
+ * Null is unavailable. A stored overall is provisional when AI Visibility or
+ * Entity Strength has not been stored, matching the dashboard's persisted-column rule.
+ */
+export function overallScoreAvailability(
+  audit: Pick<AuditSummary, 'overall_score' | 'ai_visibility_score' | 'entity_score'>,
+): ScoreStatus {
+  if (audit.overall_score === null || audit.overall_score === undefined) {
+    return 'UNAVAILABLE';
+  }
+  if (audit.ai_visibility_score === null || audit.entity_score === null) {
+    return 'PROVISIONAL';
+  }
+  return 'AVAILABLE';
+}
+
 export function auditStatusLabel(status: AuditStatus | null): string {
   switch (status) {
     case 'PENDING':

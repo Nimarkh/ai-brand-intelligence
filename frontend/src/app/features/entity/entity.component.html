@@ -1,0 +1,196 @@
+<div class="intel-page" [attr.aria-busy]="status() === 'loading'">
+  <app-page-header
+    title="Entity Intelligence"
+    description="How clearly this brand appears across the crawled website and saved AI responses."
+  >
+    @if (status() === 'ready' && page(); as data) {
+      <app-audit-select
+        labelId="entity-audit"
+        [audits]="data.audits"
+        [selectedId]="data.audit.id"
+        (changed)="onAuditChange($event)"
+      />
+    }
+  </app-page-header>
+
+  @if (status() === 'loading') {
+    <div class="intel-skeleton" role="status" aria-label="Loading Entity Intelligence">
+      <p class="visually-hidden">Loading Entity Intelligence</p>
+      <div class="intel-skeleton__panel">
+        <span class="skeleton__line skeleton__line--lg"></span>
+        <span class="skeleton__line"></span>
+        <span class="skeleton__line skeleton__line--sm"></span>
+      </div>
+    </div>
+  } @else if (status() === 'error') {
+    <app-error-state
+      title="Unable to load Entity Intelligence"
+      [message]="errorMessage()"
+      retryLabel="Try again"
+      (retry)="load()"
+    />
+    @if (httpStatus() === 404) {
+      <p class="intel-recovery">
+        <a routerLink="/entity">Show your latest audit</a>
+      </p>
+    }
+  } @else if (!page()) {
+    <app-empty-state
+      icon="entity"
+      title="No audits to review yet"
+      description="Create a brand and run an audit. Entity Intelligence reads crawl and AI evidence that has already been saved."
+    >
+      <a appButton variant="primary" routerLink="/brands">Open brands</a>
+    </app-empty-state>
+  } @else {
+    @if (page(); as data) {
+    <section class="intel-context" aria-label="Selected audit">
+      <div>
+        <p class="intel-kicker">Brand</p>
+        <p class="intel-context__value">{{ data.audit.brand_name }}</p>
+      </div>
+      <div>
+        <p class="intel-kicker">Audit date</p>
+        <p class="intel-context__value">{{ auditDate(data.audit) }}</p>
+      </div>
+      <div>
+        <p class="intel-kicker">Entity Strength</p>
+        <p class="intel-context__value">
+          <app-score [value]="data.entity.overall_score" />
+        </p>
+      </div>
+      <div class="intel-context__actions">
+        <app-badge [tone]="statusTone(data.entity.status)">{{ statusLabel(data.entity.status) }}</app-badge>
+        <a appButton variant="secondary" [routerLink]="['/audits', data.audit.id]">Open audit</a>
+      </div>
+    </section>
+
+    @if (lacksEvidence(data.entity)) {
+      <div class="intel-section">
+        <app-empty-state
+          icon="entity"
+          title="No crawl or AI response data"
+          description="Entity Strength needs crawled pages or saved AI responses. Crawl the website or run AI analysis from the audit. This page does not collect that evidence."
+        >
+          <a appButton variant="primary" [routerLink]="['/audits', data.audit.id]">Open audit</a>
+        </app-empty-state>
+      </div>
+    } @else {
+      <section class="intel-stats" aria-label="Entity components">
+        <app-stat-card label="Entity Presence" [value]="scoreText(data.entity.components.presence)" />
+        <app-stat-card label="Entity Consistency" [value]="scoreText(data.entity.components.consistency)" />
+        <app-stat-card label="Structured Identity" [value]="scoreText(data.entity.components.structured_identity)" />
+        <app-stat-card label="AI Recognition" [value]="scoreText(data.entity.components.ai_recognition)" />
+      </section>
+
+      <section class="intel-section" aria-labelledby="entity-meanings">
+        <h2 id="entity-meanings">What these components mean</h2>
+        <dl class="intel-defs">
+          <div>
+            <dt>Entity Presence</dt>
+            <dd>How often the brand name appears in crawled page titles and meta descriptions.</dd>
+          </div>
+          <div>
+            <dt>Entity Consistency</dt>
+            <dd>How consistently titles, canonical URLs, and schema names agree across crawled pages.</dd>
+          </div>
+          <div>
+            <dt>Structured Identity</dt>
+            <dd>Coverage and quality of schema markup on the crawled site, including entity-type schema.</dd>
+          </div>
+          <div>
+            <dt>AI Recognition</dt>
+            <dd>Whether saved AI responses mention the brand, and the mention order inside those responses.</dd>
+          </div>
+        </dl>
+        <p class="intel-copy">
+          This is not an external knowledge graph integration. Wikidata, the Google Knowledge Graph, and similar sources are not queried.
+        </p>
+      </section>
+
+      @if (data.entity.component_details.length > 0) {
+        <section class="intel-section" aria-labelledby="entity-details">
+          <h2 id="entity-details">Component detail</h2>
+          <div class="intel-table-wrap">
+            <table class="intel-table">
+              <caption class="visually-hidden">Stored entity component scores</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Component</th>
+                  <th scope="col">Score</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Sample size</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (component of data.entity.component_details; track component.name) {
+                  <tr>
+                    <th scope="row">{{ componentName(component.name) }}</th>
+                    <td><app-score [value]="componentValue(component)" /></td>
+                    <td>
+                      <app-badge [tone]="statusTone(component.status)">{{ statusLabel(component.status) }}</app-badge>
+                    </td>
+                    <td>{{ component.sample_size }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </section>
+      }
+
+      <section class="intel-section" aria-labelledby="entity-evidence">
+        <h2 id="entity-evidence">Evidence</h2>
+        <div class="intel-table-wrap">
+          <table class="intel-table">
+            <caption class="visually-hidden">Stored entity evidence</caption>
+            <thead>
+              <tr>
+                <th scope="col">Signal</th>
+                <th scope="col">Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">Brand occurrences in titles</th>
+                <td>{{ data.entity.evidence.pages_with_brand_in_title }} of {{ data.entity.evidence.analyzable_pages }} pages</td>
+              </tr>
+              <tr>
+                <th scope="row">Brand occurrences in meta descriptions</th>
+                <td>{{ data.entity.evidence.pages_with_brand_in_meta }} of {{ data.entity.evidence.analyzable_pages }} pages</td>
+              </tr>
+              <tr>
+                <th scope="row">Pages with schema</th>
+                <td>{{ data.entity.evidence.pages_with_schema }}</td>
+              </tr>
+              <tr>
+                <th scope="row">Pages with entity schema</th>
+                <td>{{ data.entity.evidence.pages_with_entity_schema }}</td>
+              </tr>
+              <tr>
+                <th scope="row">Canonical URLs</th>
+                <td>{{ data.entity.evidence.pages_with_canonical }} present, {{ data.entity.evidence.pages_with_same_origin_canonical }} same origin</td>
+              </tr>
+              <tr>
+                <th scope="row">Canonical consistency</th>
+                <td>{{ rate(data.entity.metrics.canonical_consistency) }}</td>
+              </tr>
+              <tr>
+                <th scope="row">AI responses mentioning the brand</th>
+                <td>{{ data.entity.evidence.responses_mentioning_brand }} of {{ data.entity.evidence.successful_ai_responses }}</td>
+              </tr>
+              <tr>
+                <th scope="row">Average mention position</th>
+                <td>{{ numberValue(data.entity.evidence.average_mention_position) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        @for (note of data.entity.notes; track note) {
+          <p class="intel-copy">{{ note }}</p>
+        }
+      </section>
+    }
+    }
+  }
+</div>

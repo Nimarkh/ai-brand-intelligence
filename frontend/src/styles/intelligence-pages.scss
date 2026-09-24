@@ -1,0 +1,165 @@
+/* Standalone intelligence pages. Shares the existing surface, type, and spacing tokens. */
+
+.intel-page { min-width: 0; }
+
+.intel-audit { display: grid; gap: var(--space-xs); }
+.intel-audit__label,
+.intel-kicker {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.intel-audit__select {
+  min-width: min(100%, 16rem);
+  max-width: 100%;
+  height: var(--control-height);
+  padding: 0 var(--space-md);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: var(--font-size-sm);
+}
+.intel-audit__select:focus-visible {
+  border-color: var(--color-accent);
+  box-shadow: var(--focus-ring);
+  outline: none;
+}
+
+.intel-context,
+.intel-stats,
+.intel-skeleton__stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-lg);
+  margin-top: var(--space-lg);
+}
+.intel-context {
+  padding: var(--space-lg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+.intel-context__value {
+  margin: var(--space-xs) 0 0;
+  overflow-wrap: anywhere;
+  font-weight: var(--font-weight-semibold);
+}
+.intel-context__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  align-items: end;
+}
+
+.intel-section { margin-top: var(--space-lg); }
+.intel-section h2 { margin: 0; }
+.intel-copy {
+  margin: var(--space-sm) 0 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-relaxed);
+}
+.intel-defs {
+  display: grid;
+  gap: var(--space-md);
+  margin: var(--space-md) 0 0;
+}
+.intel-defs div {
+  display: grid;
+  gap: var(--space-xs);
+}
+.intel-defs dt {
+  font-weight: var(--font-weight-semibold);
+}
+.intel-defs dd {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-relaxed);
+}
+
+.intel-table-wrap {
+  margin-top: var(--space-md);
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+.intel-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+.intel-table th,
+.intel-table td {
+  padding: var(--space-sm) var(--space-md);
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+  vertical-align: top;
+}
+.intel-table th {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.intel-table tr:last-child td { border-bottom: 0; }
+.intel-table a {
+  color: var(--color-accent);
+  font-weight: var(--font-weight-semibold);
+  text-decoration: none;
+}
+.intel-table a:hover { text-decoration: underline; }
+.intel-table a:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: var(--radius-sm);
+}
+.intel-score {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  align-items: center;
+}
+.intel-query {
+  max-width: 28rem;
+  overflow-wrap: anywhere;
+}
+
+.intel-skeleton { display: grid; gap: var(--space-lg); margin-top: var(--space-lg); }
+.intel-skeleton__card,
+.intel-skeleton__panel {
+  display: grid;
+  gap: var(--space-md);
+  padding: var(--space-lg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+.intel-skeleton .skeleton__line { animation: abi-skeleton 1.4s ease-in-out infinite; }
+.intel-recovery {
+  margin: var(--space-md) 0 0;
+  font-size: var(--font-size-sm);
+}
+
+@media (max-width: 900px) {
+  .intel-context,
+  .intel-stats,
+  .intel-skeleton__stats { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 640px) {
+  .intel-context,
+  .intel-stats,
+  .intel-skeleton__stats { grid-template-columns: 1fr; }
+  .intel-audit__select { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .intel-skeleton .skeleton__line { animation: none; }
+}
