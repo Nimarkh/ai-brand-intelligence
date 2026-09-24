@@ -23,7 +23,9 @@ COPY alembic ./alembic
 COPY app ./app
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 
+# Strip CR so a Windows working copy (CRLF) still has a valid Linux shebang.
 RUN mkdir -p /data/reports \
+    && sed -i 's/\r$//' /docker-entrypoint.sh \
     && chmod +x /docker-entrypoint.sh \
     && chown -R app:app /app /data/reports
 

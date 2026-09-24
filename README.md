@@ -202,6 +202,8 @@ Then open:
 
 The backend container runs `alembic upgrade head` before Uvicorn in development Compose.
 
+Interview rehearsal (health check, crawl, audit pipeline, reset): [docs/demo.md](docs/demo.md).
+
 ### Host-side notes
 
 - Frontend: `cd frontend && npm install && npm start` (dev proxy to `/api/v1`)
@@ -244,6 +246,7 @@ Honest residual risks (DNS rebinding, single-process rate limits, OpenAPI exposu
 | [docs/scoring.md](docs/scoring.md) | Score formulas and limitations |
 | [docs/security.md](docs/security.md) | Threat model and controls |
 | [docs/deployment.md](docs/deployment.md) | Production deploy guide |
+| [docs/demo.md](docs/demo.md) | Live interview demo |
 | [docs/testing.md](docs/testing.md) | Test strategy and results |
 
 Feature docs also cover crawler, SEO, AI provider/query/visibility, entity intelligence, recommendations, dashboard, query explorer, Ask Intelligence, and reports.

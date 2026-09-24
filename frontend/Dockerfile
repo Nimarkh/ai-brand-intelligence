@@ -13,6 +13,8 @@ FROM deps AS development
 WORKDIR /app
 COPY . .
 EXPOSE 4200
+# Compose service name. Host `npm start` does not use this image.
+ENV API_PROXY_TARGET=http://backend:8000
 CMD ["npm", "start", "--", "--host", "0.0.0.0", "--port", "4200"]
 
 # ---- production build ----

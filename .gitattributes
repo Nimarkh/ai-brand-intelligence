@@ -1,0 +1,4 @@
+# Shell scripts execute inside Linux containers. LF is required so the
+# shebang is #!/bin/sh. CRLF makes the kernel look up /bin/sh\r and fail
+# with: exec /docker-entrypoint.sh: no such file or directory
+*.sh text eol=lf

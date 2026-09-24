@@ -185,11 +185,13 @@ curl -fsS http://localhost:8080/api/v1/health
 Note: production requires `COOKIE_SECURE=true`. Chromium treats `http://localhost` as a secure context for cookies, so local auth smoke tests usually work on localhost without TLS. Other browsers or non-localhost hosts need real HTTPS.
 
 
-Development stack (unchanged):
+Development stack (localhost interview demo):
 
 ```bash
 docker compose up --build
 ```
+
+Live interview steps, environment values, and the demo checklist: [demo.md](demo.md).
 
 ---
 

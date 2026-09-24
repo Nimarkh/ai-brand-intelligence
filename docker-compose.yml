@@ -16,9 +16,14 @@ services:
 
       - CHOKIDAR_USEPOLLING=true
 
+      # Inside this container, 127.0.0.1 is the frontend — not the API.
+      - API_PROXY_TARGET=http://backend:8000
+
     depends_on:
 
-      - backend
+      backend:
+
+        condition: service_healthy
 
 
 
@@ -54,7 +59,11 @@ services:
 
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:4200,http://127.0.0.1:4200}
 
-      REPORTS_DIR: ${REPORTS_DIR:-/data/reports}
+      AI_PROVIDER: ${AI_PROVIDER:-mock}
+
+      # Always the named volume. Do not take REPORTS_DIR from .env
+      # (host runs use ./data/reports; that path is wrong inside this container).
+      REPORTS_DIR: /data/reports
 
       RUN_MIGRATIONS_ON_START: ${RUN_MIGRATIONS_ON_START:-true}
 
@@ -73,6 +82,18 @@ services:
       redis:
 
         condition: service_healthy
+
+    healthcheck:
+
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/api/v1/health"]
+
+      interval: 5s
+
+      timeout: 5s
+
+      retries: 20
+
+      start_period: 20s
 
 
 
