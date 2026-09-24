@@ -251,15 +251,72 @@ Honest residual risks (DNS rebinding, single-process rate limits, OpenAPI exposu
 
 Feature docs also cover crawler, SEO, AI provider/query/visibility, entity intelligence, recommendations, dashboard, query explorer, Ask Intelligence, and reports.
 
-## Screenshots / demo
+## Demo & Screenshots
 
-Screenshots and a live demo are **not included** in this repository.
+The application was verified end to end locally with Docker Compose. The screenshots below are the actual application UI and stored audit results from that workflow. They are a local verification record, not a live online demo.
 
-- No verified screenshot assets were present at portfolio packaging time.
-- Docker was not available in the packaging environment used for Phase 23, so a running UI could not be captured here.
-- **Live demo: not currently deployed.**
+Verified workflow:
 
-Do not assume hosted availability from this README.
+1. Register / login
+2. Create brand
+3. Crawl website
+4. SEO analysis
+5. Deterministic scoring
+6. AI query analysis
+7. AI visibility
+8. Entity intelligence
+9. Recommendations
+10. PDF report generation
+
+AI analysis in these screenshots uses the deterministic `MockAIProvider` included in the repository, so the demo shows the provider abstraction and the full pipeline without an external API key. This project is not a publicly hosted production service. There is no live cloud deployment.
+
+### Dashboard
+
+![Dashboard showing stored scores from the local audit](docs/screenshots/dashboard.png)
+
+Latest owned audit: website health, SEO, AI visibility, and entity strength from stored results.
+
+### Audit & Scoring
+
+![Audits list with one completed scored audit](docs/screenshots/audits.png)
+
+Completed audit from the local workflow, with deterministic website, SEO, AI visibility, and entity scores.
+
+### AI Visibility
+
+![AI Visibility page for the stored audit](docs/screenshots/ai-visibility.png)
+
+Saved AI visibility analysis. Citation detection is heuristic, position is mention order inside the response, and semantic alignment is lexical.
+
+### Query Explorer
+
+![Query Explorer listing persisted AI queries and responses](docs/screenshots/query-explorer.png)
+
+Persisted queries and responses from the audit, including mention, citation, and position evidence.
+
+### Entity Intelligence
+
+![Entity Intelligence scores and evidence for the stored audit](docs/screenshots/entity-intelligence.png)
+
+Entity strength from the crawled site and saved AI responses. This is not an external knowledge-graph check.
+
+### Recommendations
+
+![Recommendations generated from the stored audit](docs/screenshots/recommendations.png)
+
+Prioritized actions derived from the stored audit intelligence.
+
+### Reports
+
+![Reports page with a ready report for the completed audit](docs/screenshots/reports.png)
+
+Generated report for the completed audit, available to view or download.
+
+### Ask Intelligence
+
+![Ask Intelligence with the completed audit selected](docs/screenshots/ask-intelligence.png)
+
+Audit-aware questions against the stored audit from the local run.
 
 ## Current limitations
 
