@@ -246,7 +246,7 @@ Honest residual risks (DNS rebinding, single-process rate limits, OpenAPI exposu
 | [docs/scoring.md](docs/scoring.md) | Score formulas and limitations |
 | [docs/security.md](docs/security.md) | Threat model and controls |
 | [docs/deployment.md](docs/deployment.md) | Production deploy guide |
-| [docs/demo.md](docs/demo.md) | Live interview demo |
+| [docs/demo.md](docs/demo.md) | Local interview demo |
 | [docs/testing.md](docs/testing.md) | Test strategy and results |
 
 Feature docs also cover crawler, SEO, AI provider/query/visibility, entity intelligence, recommendations, dashboard, query explorer, Ask Intelligence, and reports.
@@ -348,11 +348,3 @@ Future work (not implemented):
 ## License
 
 No license file is present in this repository. Licensing terms are **undecided** — choose and add a `LICENSE` before public distribution if you need explicit terms.
-
-## GitHub portfolio metadata (recommended)
-
-**Description:** Full-stack SaaS platform for website, SEO, AI visibility, and brand entity intelligence.
-
-**Topics:** `angular` `fastapi` `python` `typescript` `postgresql` `saas` `ai` `seo` `docker` `full-stack`
-
-Apply these on the GitHub repository settings when the remote is available. This packaging phase does not modify GitHub remotely.
