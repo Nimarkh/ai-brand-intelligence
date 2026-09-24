@@ -1,0 +1,57 @@
+<aside
+  id="app-sidebar"
+  class="sidebar"
+  [class.sidebar--collapsed]="sidebar.collapsed()"
+  [class.sidebar--open]="sidebar.mobileOpen()"
+  aria-label="Sidebar"
+>
+  <div class="sidebar__brand">
+    <a class="brand" routerLink="/dashboard">
+      <app-mark [size]="28" />
+      <span class="brand__name">AI Brand Intelligence</span>
+      <span class="sidebar__tooltip" aria-hidden="true">AI Brand Intelligence</span>
+    </a>
+  </div>
+
+  <div class="sidebar__scroll">
+    <nav class="sidebar__nav" aria-label="Main">
+      @for (section of sections; track section.label) {
+        <div class="sidebar__group">
+          <p class="sidebar__section">{{ section.label }}</p>
+          <ul class="sidebar__list">
+            @for (item of section.items; track item.path) {
+              <li>
+                <a
+                  class="nav-link"
+                  [routerLink]="item.path"
+                  routerLinkActive="is-active"
+                  [routerLinkActiveOptions]="linkActiveOptions(item)"
+                >
+                  <app-icon [name]="item.icon" [size]="18" />
+                  <span class="nav-link__label">{{ item.label }}</span>
+                  <span class="sidebar__tooltip" aria-hidden="true">{{ item.label }}</span>
+                </a>
+              </li>
+            }
+          </ul>
+        </div>
+      }
+    </nav>
+  </div>
+
+  <div class="sidebar__footer">
+    <button
+      type="button"
+      class="sidebar__collapse"
+      [attr.aria-label]="sidebar.collapsed() ? 'Expand sidebar' : 'Collapse sidebar'"
+      [attr.aria-expanded]="!sidebar.collapsed()"
+      (click)="sidebar.toggleCollapsed()"
+    >
+      <app-icon name="panel" [size]="18" />
+      <span class="nav-link__label">{{ sidebar.collapsed() ? 'Expand' : 'Collapse' }}</span>
+      <span class="sidebar__tooltip" aria-hidden="true">
+        {{ sidebar.collapsed() ? 'Expand sidebar' : 'Collapse sidebar' }}
+      </span>
+    </button>
+  </div>
+</aside>

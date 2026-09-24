@@ -1,0 +1,318 @@
+<div class="qe" [attr.aria-busy]="status() === 'loading' || listBusy()">
+  <app-page-header
+    title="Query Explorer"
+    description="Inspect the AI queries and responses behind your visibility metrics."
+  >
+    @if (status() === 'ready' && data()) {
+      @if (data(); as view) {
+      @if (view.audits.length > 1) {
+        <label class="qe-audit">
+          <span class="qe-audit__label" id="qe-audit-label">Audit</span>
+          <select
+            class="qe-audit__select"
+            aria-labelledby="qe-audit-label"
+            [value]="selectedAuditId() ?? ''"
+            (change)="onAuditChange(selectValue($event))"
+          >
+            @for (audit of view.audits; track audit.id) {
+              <option [value]="audit.id">{{ auditLabel(audit) }}</option>
+            }
+          </select>
+        </label>
+      }
+      }
+    }
+  </app-page-header>
+
+  @if (status() === 'loading') {
+    <div class="qe-skeleton" role="status" aria-label="Loading query explorer">
+      <p class="visually-hidden">Loading query explorer</p>
+      <div class="qe-skeleton__stats">
+        @for (card of [1, 2, 3, 4]; track card) {
+          <div class="qe-skeleton__card">
+            <span class="skeleton__line skeleton__line--sm"></span>
+            <span class="skeleton__line skeleton__line--lg"></span>
+          </div>
+        }
+      </div>
+      <div class="qe-skeleton__list">
+        <span class="skeleton__line skeleton__line--lg"></span>
+        <span class="skeleton__line"></span>
+        <span class="skeleton__line"></span>
+        <span class="skeleton__line skeleton__line--sm"></span>
+      </div>
+    </div>
+  } @else if (status() === 'error') {
+    <app-error-state
+      title="Unable to load Query Explorer"
+      [message]="errorMessage()"
+      retryLabel="Try again"
+      (retry)="load(false)"
+    />
+    @if (httpStatus() === 404) {
+      <p class="qe-error-recovery">
+        <a routerLink="/query-explorer" [queryParams]="{ audit_id: null }">Show your latest audit</a>
+      </p>
+    }
+  } @else if (data()) {
+    @if (data(); as view) {
+    @if (view.audit === null) {
+      <app-empty-state
+        icon="query"
+        title="No audits to explore yet"
+        description="Create a brand and run an audit. Query Explorer only reads AI queries that have already been saved."
+      >
+        <a appButton variant="primary" routerLink="/brands/new">Add brand</a>
+        <a appButton variant="secondary" routerLink="/brands">Open brands</a>
+      </app-empty-state>
+    } @else {
+      <section class="qe-context" aria-label="Audit context">
+        <div>
+          <p class="qe-context__label">Brand</p>
+          <p class="qe-context__value">{{ view.audit.brand_name }}</p>
+        </div>
+        <div>
+          <p class="qe-context__label">Audit date</p>
+          <p class="qe-context__value">{{ auditLabel(view.audit) }}</p>
+        </div>
+        <div>
+          <p class="qe-context__label">Queries</p>
+          <p class="qe-context__value">{{ view.summary?.total_queries ?? unavailable }}</p>
+        </div>
+        <div>
+          <p class="qe-context__label">Response coverage</p>
+          <p class="qe-context__value">{{ responseCoverage(view) }}</p>
+        </div>
+      </section>
+
+      @if (summaryHasQueries(view)) {
+        @if (view.summary; as summary) {
+          <section class="qe-stats" aria-label="Query summary">
+            <app-stat-card label="Queries" [value]="'' + summary.total_queries" />
+            <app-stat-card label="Responses" [value]="summary.responses + ' / ' + summary.total_queries" />
+            <app-stat-card label="Mention rate" [value]="rate(summary.mention_rate)" />
+            <app-stat-card label="Citation rate" [value]="rate(summary.citation_rate)" />
+          </section>
+        }
+        <section class="qe-filters" aria-label="Query filters">
+          <label class="field qe-search">
+            <span class="field__label" id="qe-search-label">Search</span>
+            <input
+              type="search"
+              aria-labelledby="qe-search-label"
+              placeholder="Search queries"
+              [value]="search()"
+              (input)="onSearchChange(inputValue($event))"
+            />
+          </label>
+          <label class="field">
+            <span class="field__label" id="qe-category-label">Category</span>
+            <select
+              class="qe-filter--category"
+              aria-labelledby="qe-category-label"
+              [value]="category()"
+              (change)="onCategoryChange(selectValue($event))"
+            >
+              @for (option of categoryOptions; track option.value) {
+                <option [value]="option.value">{{ option.label }}</option>
+              }
+            </select>
+          </label>
+          <label class="field">
+            <span class="field__label" id="qe-response-label">Response status</span>
+            <select
+              class="qe-filter--response"
+              aria-labelledby="qe-response-label"
+              [value]="responseStatus()"
+              (change)="onResponseStatusChange(selectValue($event))"
+            >
+              @for (option of responseOptions; track option.value) {
+                <option [value]="option.value">{{ option.label }}</option>
+              }
+            </select>
+          </label>
+          <label class="field">
+            <span class="field__label" id="qe-mention-label">Brand mentioned</span>
+            <select
+              class="qe-filter--mention"
+              aria-labelledby="qe-mention-label"
+              [value]="mention()"
+              (change)="onMentionChange(selectValue($event))"
+            >
+              @for (option of mentionOptions; track option.value) {
+                <option [value]="option.value">{{ option.label }}</option>
+              }
+            </select>
+          </label>
+          <label class="field">
+            <span class="field__label" id="qe-citation-label">Citation</span>
+            <select
+              class="qe-filter--citation"
+              aria-labelledby="qe-citation-label"
+              [value]="citation()"
+              (change)="onCitationChange(selectValue($event))"
+            >
+              @for (option of citationOptions; track option.value) {
+                <option [value]="option.value">{{ option.label }}</option>
+              }
+            </select>
+          </label>
+          <button appButton type="button" variant="ghost" (click)="clearFilters()">Clear filters</button>
+        </section>
+
+        @if (summaryResponsesMissing(view)) {
+          <p class="qe-note" role="status">Queries were generated, but no AI responses were recorded.</p>
+        }
+
+        @if (noFilterMatches(view)) {
+          <app-empty-state
+            icon="query"
+            title="No queries match your filters."
+            description="Try a different search or clear the filters to see every query for this audit."
+            [compact]="true"
+          />
+        } @else {
+          <section class="qe-list" aria-label="AI queries" [attr.aria-busy]="listBusy()">
+            @if (listBusy()) {
+              <p class="qe-list__status" role="status">Updating queries</p>
+            }
+            <div class="qe-table">
+              <div class="qe-table__head" aria-hidden="true">
+                <span>Category</span>
+                <span>Query</span>
+                <span>Response</span>
+                <span>Mention</span>
+                <span>Position</span>
+                <span>Citation</span>
+                <span></span>
+              </div>
+              <p class="qe-list__meta">{{ rangeLabel(view) }}</p>
+              @for (item of view.items; track item.query_id) {
+                <article class="qe-row" [class.qe-row--open]="isOpen(item)">
+                  <button
+                    type="button"
+                    class="qe-row__main"
+                    [attr.aria-expanded]="isOpen(item)"
+                    [attr.aria-controls]="'qe-detail-' + item.query_id"
+                    (click)="toggleQuery(item.query_id)"
+                  >
+                    <app-badge [tone]="categoryTone(item.category)">{{ categoryName(item.category) }}</app-badge>
+                    <span class="qe-row__query">{{ item.query_text }}</span>
+                    <app-badge [tone]="item.has_response ? 'success' : 'warning'">
+                      {{ item.has_response ? 'Responded' : 'No response' }}
+                    </app-badge>
+                    <span>{{ item.response ? mentionLabel(item.response.brand_mentioned) : unavailable }}</span>
+                    <span>{{ item.response ? positionLabel(item.response.brand_position) : unavailable }}</span>
+                    <span>{{ item.response ? mentionLabel(item.response.citation_found) : unavailable }}</span>
+                    <span class="qe-row__chevron" aria-hidden="true"></span>
+                  </button>
+                  @if (isOpen(item)) {
+                    <div class="qe-detail" [id]="'qe-detail-' + item.query_id">
+                      <div class="qe-detail__grid">
+                        <section>
+                          <h2>Query</h2>
+                          <dl>
+                            <div>
+                              <dt>Category</dt>
+                              <dd>{{ categoryName(item.category) }}</dd>
+                            </div>
+                            <div>
+                              <dt>Asked</dt>
+                              <dd>{{ timestamp(item.created_at) }}</dd>
+                            </div>
+                          </dl>
+                          <p class="qe-detail__text">{{ item.query_text }}</p>
+                        </section>
+                        <section>
+                          <h2>Response</h2>
+                          @if (item.response; as response) {
+                            <dl>
+                              <div>
+                                <dt>Provider</dt>
+                                <dd>{{ response.provider || unavailable }}</dd>
+                              </div>
+                              <div>
+                                <dt>Model</dt>
+                                <dd>{{ response.model || unavailable }}</dd>
+                              </div>
+                              <div>
+                                <dt>Latency</dt>
+                                <dd>{{ latencyLabel(response.latency_ms) }}</dd>
+                              </div>
+                              <div>
+                                <dt>Brand mentioned</dt>
+                                <dd>{{ mentionLabel(response.brand_mentioned) }}</dd>
+                              </div>
+                              <div>
+                                <dt>Brand position</dt>
+                                <dd>{{ positionLabel(response.brand_position) }}</dd>
+                              </div>
+                              <div>
+                                <dt>Citation found</dt>
+                                <dd>{{ mentionLabel(response.citation_found) }}</dd>
+                              </div>
+                              <div>
+                                <dt>Semantic alignment</dt>
+                                <dd>{{ alignmentLabel(response.semantic_alignment) }}</dd>
+                              </div>
+                            </dl>
+                          } @else {
+                            <p class="qe-detail__missing">No AI response was recorded for this query.</p>
+                          }
+                        </section>
+                      </div>
+                      @if (item.response; as response) {
+                        <h3>Full AI response</h3>
+                        <pre class="qe-response">{{ response.text }}</pre>
+                      }
+                    </div>
+                  }
+                </article>
+              }
+            </div>
+            @if (view.pagination.total > 0) {
+              <div class="qe-pager">
+                <button
+                  appButton
+                  type="button"
+                  variant="secondary"
+                  [disabled]="view.pagination.page <= 1"
+                  (click)="goToPage(view.pagination.page - 1)"
+                >
+                  Previous
+                </button>
+                <p>Page {{ view.pagination.page }} of {{ view.pagination.pages }}</p>
+                <button
+                  appButton
+                  type="button"
+                  variant="secondary"
+                  [disabled]="view.pagination.page >= view.pagination.pages"
+                  (click)="goToPage(view.pagination.page + 1)"
+                >
+                  Next
+                </button>
+                <label class="field qe-page-size">
+                  <span class="field__label">Page size</span>
+                  <select [value]="pageSizeValue()" (change)="onPageSizeChange(selectValue($event))">
+                    @for (size of pageSizes; track size) {
+                      <option [value]="size">{{ size }}</option>
+                    }
+                  </select>
+                </label>
+              </div>
+            }
+          </section>
+        }
+      } @else {
+        <app-empty-state
+          icon="query"
+          title="No AI queries yet."
+          description="Run AI Query Analysis from the audit page. Query Explorer only reads saved results."
+        >
+          <a appButton variant="primary" [routerLink]="['/audits', view.audit.id]">View audit</a>
+        </app-empty-state>
+      }
+    }
+    }
+  }
+</div>

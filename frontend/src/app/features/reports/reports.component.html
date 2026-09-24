@@ -1,0 +1,126 @@
+<section class="reports-page">
+  <app-page-header
+    title="Reports"
+    description="Generate professional reports from completed audits."
+  >
+    @if (!loading() && !loadError()) {
+      <button appButton type="button" (click)="openModal()">Generate Report</button>
+    }
+  </app-page-header>
+
+  @if (loading()) {
+    <app-loading-state variant="skeleton" label="Loading reports" />
+  } @else if (loadError()) {
+    @if (loadError(); as message) {
+      <app-error-state
+        title="Something went wrong."
+        [message]="message"
+        retryLabel="Retry"
+        (retry)="load()"
+      />
+    }
+  } @else {
+    @if (actionError(); as message) {
+      <div class="reports-banner">
+        <app-error-state [message]="message" />
+      </div>
+    }
+
+    @if (reports().length === 0) {
+      <app-empty-state
+        icon="reports"
+        title="No reports yet."
+        description="Generate a report from a completed audit."
+      >
+        <button appButton type="button" (click)="openModal()">Generate Report</button>
+      </app-empty-state>
+    } @else {
+      <h2 class="reports-section-title">Recent Reports</h2>
+      <div class="reports-table-wrap">
+        <table class="reports-table">
+          <thead>
+            <tr>
+              <th>Brand</th>
+              <th>Audit</th>
+              <th>Status</th>
+              <th>Created</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (report of reports(); track report.id) {
+              <tr>
+                <td>{{ report.brand_name }}</td>
+                <td>{{ date(report.audit_date) }}</td>
+                <td>
+                  <app-badge [tone]="tone(report.status)">{{ label(report.status) }}</app-badge>
+                </td>
+                <td>{{ date(report.created_at) }}</td>
+                <td class="reports-actions">
+                  @if (report.status === 'READY') {
+                    <a appButton variant="secondary" [routerLink]="['/reports', report.id]">View</a>
+                    <button
+                      appButton
+                      type="button"
+                      variant="secondary"
+                      (click)="download(report)"
+                      [loading]="downloadingId() === report.id"
+                    >
+                      Download
+                    </button>
+                  } @else if (report.status === 'GENERATING') {
+                    <span class="reports-pending">Generating…</span>
+                  } @else {
+                    <span class="reports-failed">Failed</span>
+                    <button
+                      appButton
+                      type="button"
+                      variant="secondary"
+                      (click)="retry(report)"
+                      [loading]="retryingId() === report.id"
+                    >
+                      Try again
+                    </button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  }
+
+  @if (modalOpen()) {
+    <app-modal title="Select audit" [open]="true" (openChange)="modalOpen.set($event)">
+      @if (completedAudits().length === 0) {
+        <p class="reports-modal__copy">Complete the audit before generating a report.</p>
+      } @else {
+        <label class="field">
+          <span class="field__label">Brand — Audit Date</span>
+          <select [value]="selectedAuditId()" (change)="onAuditChange($event)">
+            @for (audit of completedAudits(); track audit.id) {
+              <option [value]="audit.id">{{ optionLabel(audit) }}</option>
+            }
+          </select>
+        </label>
+      }
+      @if (modalError(); as message) {
+        <p class="reports-modal__error">{{ message }}</p>
+      }
+      <button appButton modalActions type="button" variant="secondary" (click)="closeModal()" [disabled]="generating()">
+        Cancel
+      </button>
+      <button
+        appButton
+        modalActions
+        type="button"
+        (click)="generate()"
+        [disabled]="generating() || completedAudits().length === 0"
+        [loading]="generating()"
+      >
+        Generate Report
+      </button>
+    </app-modal>
+  }
+</section>

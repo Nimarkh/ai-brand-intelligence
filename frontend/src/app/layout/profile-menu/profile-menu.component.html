@@ -1,0 +1,26 @@
+@if (currentUser(); as user) {
+  <button
+    type="button"
+    class="profile__trigger"
+    id="profile-menu-trigger"
+    aria-haspopup="menu"
+    [attr.aria-expanded]="open()"
+    [attr.aria-controls]="open() ? 'profile-menu' : null"
+    aria-label="Account menu"
+    (click)="toggle()"
+  >
+    <span class="avatar" aria-hidden="true">{{ initials(user) }}</span>
+    <span class="profile__trigger-name">{{ displayName(user) }}</span>
+  </button>
+
+  @if (open()) {
+    <div class="profile__menu" id="profile-menu" role="menu" aria-labelledby="profile-menu-trigger">
+      <div class="profile__identity">
+        <p class="profile__name">{{ displayName(user) }}</p>
+        <p class="profile__email">{{ user.email }}</p>
+      </div>
+      <a class="menu-item" role="menuitem" routerLink="/settings" (click)="close()">Settings</a>
+      <button class="menu-item menu-item--danger" role="menuitem" type="button" (click)="signOut()">Sign out</button>
+    </div>
+  }
+}

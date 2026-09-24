@@ -1,0 +1,72 @@
+<section class="reports-page">
+  <a class="reports-back" routerLink="/reports">Back to reports</a>
+
+  @if (loading()) {
+    <app-loading-state variant="skeleton" label="Loading report" />
+  } @else if (error()) {
+    @if (error(); as message) {
+      <app-error-state
+        title="Something went wrong."
+        [message]="message"
+        retryLabel="Retry"
+        (retry)="load()"
+      />
+    }
+  } @else if (report()) {
+    @if (report(); as current) {
+    <app-page-header [title]="current.title" [description]="current.website || 'Website not available'">
+      @if (current.status === 'READY') {
+        <button appButton type="button" (click)="download()" [loading]="downloading()">Download PDF</button>
+      }
+    </app-page-header>
+
+    <div class="reports-meta">
+      <p><span>Brand</span> {{ current.brand_name }}</p>
+      <p><span>Audit date</span> {{ date(current.audit_date) }}</p>
+      <p><span>Status</span> <app-badge [tone]="tone(current.status)">{{ label(current.status) }}</app-badge></p>
+      <p><span>Generated</span> {{ date(current.generated_at) }}</p>
+    </div>
+
+    @if (actionError(); as message) {
+      <div class="reports-banner">
+        <app-error-state [message]="message" />
+      </div>
+    }
+
+    @if (current.status === 'GENERATING') {
+      <p class="reports-pending">Generating…</p>
+    } @else if (current.status === 'FAILED') {
+      <div class="reports-failed-panel">
+        <p>Failed</p>
+        <p>{{ current.message || 'The report could not be generated. Please try again.' }}</p>
+        <button appButton type="button" variant="secondary" (click)="retry()" [loading]="retrying()">Try again</button>
+      </div>
+    }
+
+    @if (current.scores.length > 0) {
+      <h2 class="reports-section-title">Key scores</h2>
+      @if (current.overall_status === 'PROVISIONAL' && current.overall_note) {
+        <p class="reports-note"><strong>Provisional.</strong> {{ current.overall_note }}</p>
+      } @else if (current.overall_status === 'UNAVAILABLE') {
+        <p class="reports-note">Overall Intelligence Score: {{ score(null) }}</p>
+      } @else if (current.overall_score !== null) {
+        <p class="reports-note">Overall Intelligence Score: {{ score(current.overall_score) }}</p>
+      }
+      <div class="reports-scores">
+        @for (item of current.scores; track item.key) {
+          <app-stat-card [label]="item.label" [value]="score(item.score)" [change]="availability(item.status)" />
+        }
+      </div>
+    }
+
+    @if (current.sections.length > 0) {
+      <h2 class="reports-section-title">Sections included</h2>
+      <ul class="reports-sections">
+        @for (section of current.sections; track section) {
+          <li>{{ section }}</li>
+        }
+      </ul>
+    }
+    }
+  }
+</section>

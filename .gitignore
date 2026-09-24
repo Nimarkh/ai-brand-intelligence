@@ -1,0 +1,57 @@
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Node / Angular
+node_modules/
+dist/
+.angular/
+.npm/
+.cache/
+*.tsbuildinfo
+
+# Python
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage/
+.tox/
+*.db
+
+# Test / E2E artifacts
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
+# Application generated files
+data/reports/
+backend/data/
+*.log
+logs/
+
+# Docker
+*.pid
+
+# IDE (no shared editor config committed)
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini

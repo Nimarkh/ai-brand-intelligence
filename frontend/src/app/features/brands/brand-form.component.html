@@ -1,0 +1,81 @@
+@if (status() === 'loading') {
+  <app-loading-state label="Loading brand" />
+} @else if (status() === 'not-found') {
+  <app-page-header title="Brand" description="This brand is unavailable." />
+  <app-empty-state
+    icon="alert"
+    title="Brand not found"
+    description="It may have been deleted, or the link is incorrect."
+  >
+    <button appButton type="button" variant="secondary" (click)="backToBrands()">Back to brands</button>
+  </app-empty-state>
+} @else if (status() === 'error') {
+  <app-error-state title="Couldn't load brand" [message]="errorMessage() ?? 'Could not load this brand.'" />
+} @else {
+  <app-page-header
+    [title]="mode() === 'edit' ? 'Edit brand' : 'Add brand'"
+    [description]="mode() === 'edit' ? 'Update the details used to identify this brand.' : 'Add a brand to your workspace.'"
+  />
+
+  <app-card class="brand-form-card">
+    <form class="brand-form" [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+      <app-input
+        label="Brand name *"
+        formControlName="name"
+        autocomplete="organization"
+        placeholder="Northwind"
+        [error]="fieldError('name')"
+      />
+      <app-input
+        label="Website URL *"
+        type="url"
+        formControlName="website_url"
+        autocomplete="url"
+        placeholder="https://example.com"
+        [error]="fieldError('website_url')"
+      />
+      <app-input
+        label="Industry *"
+        formControlName="industry"
+        placeholder="Outdoor apparel"
+        [error]="fieldError('industry')"
+      />
+      <app-input
+        label="Country *"
+        formControlName="country"
+        autocomplete="country-name"
+        placeholder="United States"
+        [error]="fieldError('country')"
+      />
+      <app-input
+        label="Target market *"
+        formControlName="target_market"
+        placeholder="North America"
+        [error]="fieldError('target_market')"
+      />
+      <app-textarea
+        label="Description"
+        formControlName="description"
+        placeholder="What should analysis focus on?"
+        [error]="fieldError('description')"
+      />
+
+      @if (errorMessage(); as message) {
+        <app-error-state [message]="message" />
+      }
+
+      <div class="brand-form__actions">
+        <button appButton type="button" variant="secondary" (click)="cancel()" [disabled]="submitting()">Cancel</button>
+        <button appButton type="submit" variant="primary" [disabled]="submitDisabled" [loading]="submitting()">
+          @if (submitting()) {
+            Saving…
+          } @else if (mode() === 'edit') {
+            Save changes
+          } @else {
+            Create brand
+          }
+        </button>
+      </div>
+    </form>
+  </app-card>
+}

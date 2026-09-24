@@ -1,0 +1,137 @@
+services:
+
+  frontend:
+
+    build:
+
+      context: ./frontend
+
+      target: development
+
+    ports:
+
+      - "4200:4200"
+
+    environment:
+
+      - CHOKIDAR_USEPOLLING=true
+
+    depends_on:
+
+      - backend
+
+
+
+  backend:
+
+    build:
+
+      context: ./backend
+
+    ports:
+
+      - "8000:8000"
+
+    environment:
+
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+
+      API_PREFIX: ${API_PREFIX:-/api/v1}
+
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/brand_intelligence}
+
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-development-only!!!}
+
+      JWT_EXPIRE_MINUTES: ${JWT_EXPIRE_MINUTES:-60}
+
+      COOKIE_NAME: ${COOKIE_NAME:-ai_brand_access_token}
+
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+
+      COOKIE_SAMESITE: ${COOKIE_SAMESITE:-lax}
+
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:4200,http://127.0.0.1:4200}
+
+      REPORTS_DIR: ${REPORTS_DIR:-/data/reports}
+
+      RUN_MIGRATIONS_ON_START: ${RUN_MIGRATIONS_ON_START:-true}
+
+      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-1}
+
+    volumes:
+
+      - reports_data:/data/reports
+
+    depends_on:
+
+      postgres:
+
+        condition: service_healthy
+
+      redis:
+
+        condition: service_healthy
+
+
+
+  postgres:
+
+    image: postgres:16-alpine
+
+    ports:
+
+      - "5432:5432"
+
+    environment:
+
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+
+      POSTGRES_DB: ${POSTGRES_DB:-brand_intelligence}
+
+    volumes:
+
+      - postgres_data:/var/lib/postgresql/data
+
+    healthcheck:
+
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+
+      interval: 5s
+
+      timeout: 5s
+
+      retries: 10
+
+
+
+  redis:
+
+    image: redis:7-alpine
+
+    ports:
+
+      - "6379:6379"
+
+    healthcheck:
+
+      test: ["CMD", "redis-cli", "ping"]
+
+      interval: 5s
+
+      timeout: 5s
+
+      retries: 10
+
+
+
+volumes:
+
+  postgres_data:
+
+  reports_data:
+
+

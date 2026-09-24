@@ -1,0 +1,103 @@
+# Production Compose — private DB/Redis, persistent volumes, no bind mounts.
+# Usage:
+#   cp .env.example .env.prod   # then edit secrets (never commit)
+#   docker compose -f docker-compose.prod.yml --env-file .env.prod run --rm backend alembic upgrade head
+#   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+#
+# Development compose remains docker-compose.yml (DB/Redis ports published).
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      target: production
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PUBLISH_PORT:-8080}:8080"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - app_net
+
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      API_PREFIX: ${API_PREFIX:-/api/v1}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://brand_app:CHANGE_ME_DB_PASSWORD@postgres:5432/brand_intelligence}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      JWT_EXPIRE_MINUTES: ${JWT_EXPIRE_MINUTES:-60}
+      COOKIE_NAME: ${COOKIE_NAME:-ai_brand_access_token}
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
+      COOKIE_SAMESITE: ${COOKIE_SAMESITE:-lax}
+      # Public browser origin(s), e.g. https://app.example.com or http://localhost:8080 for local prod sim.
+      CORS_ORIGINS: ${CORS_ORIGINS:?CORS_ORIGINS is required}
+      REPORTS_DIR: ${REPORTS_DIR:-/data/reports}
+      AI_PROVIDER: ${AI_PROVIDER:-mock}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+      OPENAI_TIMEOUT_SECONDS: ${OPENAI_TIMEOUT_SECONDS:-30}
+      CRAWLER_MAX_PAGES: ${CRAWLER_MAX_PAGES:-20}
+      CRAWLER_MAX_DEPTH: ${CRAWLER_MAX_DEPTH:-3}
+      CRAWLER_REQUEST_TIMEOUT_SECONDS: ${CRAWLER_REQUEST_TIMEOUT_SECONDS:-10}
+      CRAWLER_DELAY_SECONDS: ${CRAWLER_DELAY_SECONDS:-0.1}
+      CRAWLER_MAX_RESPONSE_BYTES: ${CRAWLER_MAX_RESPONSE_BYTES:-5000000}
+      CRAWLER_USER_AGENT: ${CRAWLER_USER_AGENT:-AI-Brand-Intelligence-Crawler/1.0}
+      CRAWLER_MAX_REDIRECTS: ${CRAWLER_MAX_REDIRECTS:-5}
+      RUN_MIGRATIONS_ON_START: ${RUN_MIGRATIONS_ON_START:-false}
+      PORT: ${PORT:-8000}
+      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-2}
+    volumes:
+      - reports_data:/data/reports
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - app_net
+    # No host port published — reach API via frontend same-origin /api proxy
+    # or an edge reverse proxy (deploy/nginx.conf).
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-brand_app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_DB:-brand_intelligence}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - app_net
+    # Intentionally no ports: — PostgreSQL stays private on app_net.
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - app_net
+    # Intentionally no ports: — Redis stays private. Reserved for future queue/cache.
+    # Not required for core API startup; backend does not fail if unused.
+
+networks:
+  app_net:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  reports_data:

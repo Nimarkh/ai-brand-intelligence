@@ -1,0 +1,181 @@
+@if (status() === 'loading') {
+  <app-loading-state label="Loading brand" />
+} @else if (status() === 'not-found') {
+  <app-page-header title="Brand" description="This brand is unavailable." />
+  <app-empty-state
+    icon="alert"
+    title="Brand not found"
+    description="It may have been deleted, or the link is incorrect."
+  >
+    <a appButton variant="secondary" routerLink="/brands">Back to brands</a>
+  </app-empty-state>
+} @else if (status() === 'error') {
+  <app-error-state
+    title="Couldn't load brand"
+    [message]="errorMessage()"
+    retryLabel="Try again"
+    (retry)="load()"
+  />
+} @else if (brand()) {
+  @if (brand(); as current) {
+  <a class="brand-back" routerLink="/brands">All brands</a>
+  <app-page-header [title]="current.name">
+    <a appButton variant="secondary" routerLink="edit">Edit</a>
+    <button appButton type="button" variant="danger" (click)="openDelete()">Delete</button>
+  </app-page-header>
+
+  <div class="brand-kicker">
+    @if (websiteHref(current.website_url); as href) {
+      <a class="brand-site" [href]="href" target="_blank" rel="noopener noreferrer">{{ current.website_url }}</a>
+    } @else if (current.website_url) {
+      <span class="brand-site">{{ current.website_url }}</span>
+    }
+    @if (current.industry) {
+      <app-badge tone="info">{{ current.industry }}</app-badge>
+    }
+    @if (current.target_market) {
+      <app-badge>{{ current.target_market }}</app-badge>
+    }
+  </div>
+
+  <div class="brand-layout">
+    <app-card>
+      <div class="card__header">
+        <h2>Brand overview</h2>
+      </div>
+      <dl class="brand-facts">
+        <dt>Website</dt>
+        <dd>
+          @if (websiteHref(current.website_url); as href) {
+            <a [href]="href" target="_blank" rel="noopener noreferrer">{{ current.website_url }}</a>
+          } @else {
+            {{ current.website_url || 'Not set' }}
+          }
+        </dd>
+        <dt>Industry</dt>
+        <dd>{{ current.industry || 'Not set' }}</dd>
+        <dt>Country</dt>
+        <dd>{{ current.country || 'Not set' }}</dd>
+        <dt>Target market</dt>
+        <dd>{{ current.target_market || 'Not set' }}</dd>
+        <dt>Description</dt>
+        <dd class="brand-facts__description">{{ current.description || 'No description yet.' }}</dd>
+        <dt>Created</dt>
+        <dd>{{ formatDate(current.created_at) }}</dd>
+      </dl>
+    </app-card>
+
+    <div class="brand-panels">
+      <app-card>
+        <div class="card__header crawl-header">
+          <h2>Website crawl</h2>
+          <button
+            appButton
+            type="button"
+            (click)="startCrawl()"
+            [loading]="crawling()"
+            [disabled]="crawling() || !current.website_url"
+          >
+            Start website crawl
+          </button>
+        </div>
+        <div class="crawl-panel">
+          <p class="crawl-status">{{ statusLabel() }}</p>
+          @if (resultMessage(); as message) {
+            <p class="crawl-result" [class.crawl-result--failed]="!!crawlError()">{{ message }}</p>
+          }
+          <p class="crawl-note">Collects factual page data from this brand's website.</p>
+          @if (!crawling() && latestAudit()?.status === 'COMPLETED') {
+            <a appButton variant="secondary" [routerLink]="['/audits', latestAudit()!.id]">
+              Open audit / Analyze SEO
+            </a>
+          }
+        </div>
+      </app-card>
+      <app-card>
+        <div class="card__header">
+          <h2>Latest scores</h2>
+        </div>
+        @if (!latestAudit()) {
+          <p class="crawl-note">No score calculated yet</p>
+        } @else if (latestAudit()!.website_score === null && latestAudit()!.seo_score === null) {
+          <p class="crawl-note">No score calculated yet</p>
+          @if (latestAudit()!.status === 'COMPLETED') {
+            <a appButton variant="secondary" [routerLink]="['/audits', latestAudit()!.id]">Open audit to score</a>
+          }
+        } @else {
+          <div class="score-grid">
+            <div class="score-block">
+              <span class="score-block__label">Website Health</span>
+              <app-score [value]="latestAudit()!.website_score" />
+            </div>
+            <div class="score-block">
+              <span class="score-block__label">SEO</span>
+              <app-score [value]="latestAudit()!.seo_score" />
+            </div>
+            <div class="score-block">
+              <span class="score-block__label">Overall</span>
+              <app-score [value]="latestAudit()!.overall_score" />
+              @if (latestAudit()!.overall_score !== null) {
+                <app-badge tone="warning">Provisional</app-badge>
+              }
+            </div>
+          </div>
+          <p class="crawl-note">AI Visibility and Entity Strength are not available yet.</p>
+        }
+      </app-card>
+      <app-card>
+        <div class="card__header">
+          <h2>AI Visibility</h2>
+        </div>
+        <app-empty-state
+          [compact]="true"
+          icon="visibility"
+          title="No visibility analysis yet"
+          description="AI visibility analysis will appear here after an audit."
+        />
+      </app-card>
+      <app-card>
+        <div class="card__header">
+          <h2>Recommendations</h2>
+        </div>
+        <app-empty-state
+          [compact]="true"
+          icon="recommendations"
+          title="No recommendations yet"
+          description="Recommendations will appear here after analysis."
+        />
+      </app-card>
+      <app-card>
+        <div class="card__header">
+          <h2>Audit history</h2>
+        </div>
+        <p class="crawl-status">{{ statusLabel() }}</p>
+      </app-card>
+    </div>
+  </div>
+
+  @if (confirmOpen()) {
+    <app-modal title="Delete brand" [open]="true" (openChange)="confirmOpen.set($event)">
+      <p class="confirm-copy">
+        Delete <strong>{{ current.name }}</strong>? This permanently removes the brand. This cannot be undone.
+      </p>
+      @if (deleteError(); as message) {
+        <div class="confirm-error">
+          <app-error-state [message]="message" />
+        </div>
+      }
+      <button appButton modalActions type="button" variant="secondary" (click)="confirmOpen.set(false)" [disabled]="deleting()">
+        Cancel
+      </button>
+      <button appButton modalActions type="button" variant="danger" (click)="confirmDelete()" [loading]="deleting()" [disabled]="deleting()">
+        @if (deleting()) {
+          Deleting…
+        } @else {
+          Delete brand
+        }
+      </button>
+    </app-modal>
+  }
+  }
+}

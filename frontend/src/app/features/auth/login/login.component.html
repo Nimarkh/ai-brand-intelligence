@@ -1,0 +1,46 @@
+<div class="auth">
+  <section class="auth__card" aria-labelledby="login-title">
+    <div class="auth__brand">
+      <app-mark [size]="32" />
+      <p class="auth__product">AI Brand Intelligence</p>
+    </div>
+    <h1 id="login-title">Sign in</h1>
+    <p class="auth__lead">Access your brand intelligence workspace.</p>
+
+    <form class="auth__form" [formGroup]="form" (ngSubmit)="onSubmit($event)" novalidate>
+      <app-input
+        label="Email"
+        type="email"
+        formControlName="email"
+        autocomplete="email"
+        placeholder="you@company.com"
+        [error]="fieldError('email', 'Enter a valid email address.')"
+      />
+
+      <app-input
+        label="Password"
+        type="password"
+        formControlName="password"
+        autocomplete="current-password"
+        [error]="fieldError('password', 'Password must be at least 8 characters.')"
+      />
+
+      @if (errorMessage(); as message) {
+        <app-error-state [message]="message" />
+      }
+
+      <button appButton type="submit" variant="primary" [block]="true" [disabled]="submitDisabled" [loading]="submitting()">
+        @if (submitting()) {
+          Signing in…
+        } @else {
+          Sign in
+        }
+      </button>
+    </form>
+
+    <p class="auth__footer">
+      Need an account?
+      <a routerLink="/register">Create one</a>
+    </p>
+  </section>
+</div>

@@ -1,0 +1,47 @@
+<header class="topbar">
+  <div class="topbar__start">
+    <button
+      type="button"
+      class="icon-btn topbar__menu"
+      aria-controls="app-sidebar"
+      [attr.aria-expanded]="sidebar.mobileOpen()"
+      [attr.aria-label]="sidebar.mobileOpen() ? 'Close navigation' : 'Open navigation'"
+      (click)="sidebar.toggleMobile()"
+    >
+      <app-icon [name]="sidebar.mobileOpen() ? 'close' : 'menu'" [size]="18" />
+    </button>
+    <div class="topbar__heading">
+      @if (page.section()) {
+        <span class="topbar__section">{{ page.section() }}</span>
+        <span class="topbar__sep" aria-hidden="true">/</span>
+      }
+      <span class="topbar__title">{{ page.title() }}</span>
+    </div>
+  </div>
+
+  <div class="topbar__end">
+    <button
+      type="button"
+      class="icon-btn"
+      [attr.aria-pressed]="theme.theme() === 'dark'"
+      [attr.aria-label]="theme.theme() === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
+      (click)="theme.toggleTheme()"
+    >
+      <app-icon [name]="theme.theme() === 'dark' ? 'sun' : 'moon'" [size]="18" />
+    </button>
+    <button type="button" class="icon-btn" aria-label="Notifications" (click)="notificationsOpen.set(true)">
+      <app-icon name="bell" [size]="18" />
+    </button>
+    <app-profile-menu />
+  </div>
+</header>
+
+<app-modal title="Notifications" [open]="notificationsOpen()" (openChange)="notificationsOpen.set($event)">
+  <app-empty-state
+    icon="bell"
+    title="No notifications"
+    description="Alerts for audits and reports will appear here in a future phase."
+    [compact]="true"
+  />
+  <button modalActions appButton type="button" variant="secondary" (click)="notificationsOpen.set(false)">Close</button>
+</app-modal>

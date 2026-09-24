@@ -1,0 +1,634 @@
+@if (status() === 'loading') {
+  <app-loading-state label="Loading audit" />
+} @else if (status() === 'not-found') {
+  <app-page-header title="Audit" description="This audit is unavailable." />
+  <app-empty-state
+    icon="alert"
+    title="Audit not found"
+    description="It may have been deleted, or the link is incorrect."
+  >
+    <a appButton variant="secondary" routerLink="/brands">Back to brands</a>
+  </app-empty-state>
+} @else if (status() === 'error') {
+  <app-error-state
+    title="Couldn't load audit"
+    [message]="errorMessage()"
+    retryLabel="Try again"
+    (retry)="load()"
+  />
+} @else if (audit()) {
+  @if (audit(); as current) {
+  @if (brand(); as brand) {
+    <a class="brand-back" [routerLink]="['/brands', brand.id]">{{ brand.name }}</a>
+  } @else {
+    <a class="brand-back" routerLink="/brands">All brands</a>
+  }
+
+  <app-page-header title="Audit">
+    <button
+      appButton
+      type="button"
+      variant="secondary"
+      (click)="analyzeSeo()"
+      [loading]="analyzing()"
+      [disabled]="!canAnalyze()"
+    >
+      Analyze SEO
+    </button>
+    <button
+      appButton
+      type="button"
+      variant="secondary"
+      (click)="calculateScore()"
+      [loading]="scoring()"
+      [disabled]="!canScore()"
+    >
+      Calculate score
+    </button>
+    <button
+      appButton
+      type="button"
+      (click)="runAiAnalysis()"
+      [loading]="runningAiQueries()"
+      [disabled]="!canRunAiQueries()"
+    >
+      Run AI Analysis
+    </button>
+    <button
+      appButton
+      type="button"
+      variant="secondary"
+      (click)="calculateVisibility()"
+      [loading]="calculatingVisibility()"
+      [disabled]="!canCalculateVisibility()"
+    >
+      Calculate AI Visibility
+    </button>
+    <button
+      appButton
+      type="button"
+      variant="secondary"
+      (click)="calculateEntity()"
+      [loading]="calculatingEntity()"
+      [disabled]="!canCalculateEntity()"
+    >
+      Calculate Entity
+    </button>
+    <button
+      appButton
+      type="button"
+      variant="secondary"
+      (click)="calculateRecommendations()"
+      [loading]="calculatingRecommendations()"
+      [disabled]="!canCalculateRecommendations()"
+    >
+      Calculate Recommendations
+    </button>
+  </app-page-header>
+
+  <div class="audit-layout">
+    <app-card>
+      <div class="card__header">
+        <h2>Crawl summary</h2>
+      </div>
+      <dl class="brand-facts">
+        <dt>Brand</dt>
+        <dd>
+          @if (brand(); as brandRow) {
+            <a [routerLink]="['/brands', brandRow.id]">{{ brandRow.name }}</a>
+          } @else {
+            —
+          }
+        </dd>
+        <dt>Crawl status</dt>
+        <dd>{{ statusLabel(current.status) }}</dd>
+        <dt>Pages crawled</dt>
+        <dd>{{ current.pages_crawled }}</dd>
+        <dt>SEO findings</dt>
+        <dd>
+          @if (findingsLoaded()) {
+            {{ findingsTotal() }}
+          } @else {
+            —
+          }
+        </dd>
+      </dl>
+      <p class="crawl-note">
+        Crawl status reflects website capture only. Scores are calculated separately and do not change crawl status.
+      </p>
+      @if (analyzeMessage(); as message) {
+        <p class="crawl-result">{{ message }}</p>
+      }
+      @if (analyzeError(); as message) {
+        <p class="crawl-result crawl-result--failed">{{ message }}</p>
+      }
+    </app-card>
+
+    <app-card>
+      <div class="card__header">
+        <h2>Scores</h2>
+      </div>
+
+      @if (scoring()) {
+        <app-loading-state label="Calculating score" />
+      } @else if (!scoreLoaded()) {
+        <app-loading-state label="Loading scores" />
+      } @else if (!scoreIsAvailable()) {
+        <app-empty-state
+          [compact]="true"
+          icon="dashboard"
+          title="Score not calculated"
+          description="Run Calculate score after crawl and SEO analysis. Empty audits stay unavailable — not zero."
+        />
+        @if (scoreError(); as message) {
+          <p class="crawl-result crawl-result--failed">{{ message }}</p>
+        }
+      } @else if (score()) {
+        @if (score(); as scored) {
+        <div class="score-grid">
+          <div class="score-block">
+            <span class="score-block__label">Website Health</span>
+            <app-score [value]="scored.website_health.score" />
+          </div>
+          <div class="score-block">
+            <span class="score-block__label">SEO</span>
+            <app-score [value]="scored.seo.score" />
+          </div>
+          <div class="score-block">
+            <span class="score-block__label">Overall</span>
+            <app-score [value]="scored.overall.score" />
+            <app-badge tone="warning">Provisional</app-badge>
+          </div>
+        </div>
+
+        <p class="crawl-note">
+          {{ impactSummary(scored.findings_count, scored.affected_pages) }}
+        </p>
+        @if (scored.note) {
+          <p class="crawl-note">{{ scored.note }}</p>
+        }
+
+        <div class="score-breakdown">
+          <h3 class="score-breakdown__title">Category breakdown</h3>
+          <ul class="score-breakdown__list">
+            @for (component of scored.components; track component.name) {
+              <li>
+                <span>{{ componentLabel(component.name) }}</span>
+                <app-score [value]="component.score" />
+              </li>
+            }
+          </ul>
+        </div>
+
+        <div class="score-unavailable-dims">
+          <p class="crawl-note">AI Visibility: see the AI Visibility section below (not part of overall score yet).</p>
+          <p class="crawl-note">Entity Strength: see the Entity Intelligence section below (not part of overall score yet).</p>
+        </div>
+
+        @if (scoreError(); as message) {
+          <p class="crawl-result crawl-result--failed">{{ message }}</p>
+        }
+        }
+      }
+    </app-card>
+
+    <app-card>
+      <div class="card__header">
+        <h2>SEO findings</h2>
+      </div>
+
+      @if (analyzing()) {
+        <app-loading-state label="Analyzing SEO" />
+      } @else if (!findingsLoaded()) {
+        <app-loading-state label="Loading findings" />
+      } @else if (findings().length === 0) {
+        <app-empty-state
+          [compact]="true"
+          icon="audits"
+          title="No SEO findings"
+          description="The analyzer found none of the configured issues. This does not mean the website is perfect."
+        />
+      } @else {
+        <ul class="seo-findings">
+          @for (finding of findings(); track finding.id) {
+            <li class="seo-finding">
+              <div class="seo-finding__meta">
+                <app-badge [tone]="severityTone(finding.severity)">{{ severityLabel(finding.severity) }}</app-badge>
+                <app-badge>{{ finding.category }}</app-badge>
+              </div>
+              <h3 class="seo-finding__title">{{ finding.title }}</h3>
+              @if (finding.description) {
+                <p class="seo-finding__text">{{ finding.description }}</p>
+              }
+              @if (finding.recommendation) {
+                <p class="seo-finding__action">{{ finding.recommendation }}</p>
+              }
+              @if (finding.page; as page) {
+                <p class="seo-finding__page">
+                  <a [href]="page.url" target="_blank" rel="noopener noreferrer" [title]="page.url">
+                    {{ shortUrl(page.url) }}
+                  </a>
+                  @if (page.status_code !== null) {
+                    <span class="seo-finding__status">HTTP {{ page.status_code }}</span>
+                  }
+                </p>
+              }
+            </li>
+          }
+        </ul>
+      }
+    </app-card>
+
+    <app-card>
+      <div class="card__header">
+        <h2>AI Query Analysis</h2>
+      </div>
+
+      <p class="crawl-note">
+        This section stores deterministic AI queries and provider responses. Calculate AI Visibility separately to score them.
+      </p>
+
+      @if (aiQueryMessage(); as message) {
+        <p class="crawl-result">{{ message }}</p>
+      }
+      @if (aiQueryError(); as message) {
+        <p class="crawl-result crawl-result--failed">{{ message }}</p>
+      }
+
+      @if (runningAiQueries()) {
+        <app-loading-state label="Running AI query analysis" />
+      } @else if (!aiQueriesLoaded()) {
+        <app-loading-state label="Loading AI queries" />
+      } @else if (aiQueries().length === 0) {
+        <app-empty-state
+          [compact]="true"
+          [headingLevel]="3"
+          icon="audits"
+          title="No AI queries yet."
+          description="Run AI Query Analysis from this audit to populate Query Explorer and AI Visibility."
+        />
+      } @else {
+        <p class="crawl-note">
+          {{ aiQueriesTotal() }} queries in the current snapshot.
+        </p>
+        <ul class="ai-queries">
+          @for (query of aiQueries(); track query.id) {
+            <li class="ai-query">
+              <button
+                type="button"
+                class="ai-query__toggle"
+                (click)="toggleQuery(query)"
+                [attr.aria-expanded]="expandedQueryId() === query.id"
+              >
+                <span class="ai-query__text">{{ query.query_text }}</span>
+                <app-badge>{{ query.category }}</app-badge>
+                @if (query.has_response) {
+                  <app-badge tone="info">Response</app-badge>
+                } @else {
+                  <app-badge tone="warning">No response</app-badge>
+                }
+              </button>
+
+              @if (expandedQueryId() === query.id) {
+                <div class="ai-query__detail">
+                  @if (!query.has_response) {
+                    <p class="crawl-note">No response was stored for this query (provider failure or skipped).</p>
+                  } @else if (expandingQuery() && !expandedDetail()) {
+                    <app-loading-state label="Loading response" />
+                  } @else {
+                    @if (expandedDetail(); as detail) {
+                      @if (detail.response; as response) {
+                        <p class="ai-query__response">{{ response.response_text }}</p>
+                        <dl class="ai-query__signals">
+                          <div>
+                            <dt>Brand mentioned</dt>
+                            <dd>{{ response.brand_mentioned ? 'Yes' : 'No' }}</dd>
+                          </div>
+                          <div>
+                            <dt>Position</dt>
+                            <dd>{{ response.brand_position ?? '—' }}</dd>
+                          </div>
+                          <div>
+                            <dt>Citation</dt>
+                            <dd>{{ response.citation_found ? 'Detected' : 'None' }}</dd>
+                          </div>
+                          <div>
+                            <dt>Semantic alignment</dt>
+                            <dd>{{ semanticLabel(response.semantic_alignment) }}</dd>
+                          </div>
+                          <div>
+                            <dt>Provider</dt>
+                            <dd>{{ response.provider }} / {{ response.model }}</dd>
+                          </div>
+                          <div>
+                            <dt>Latency</dt>
+                            <dd>{{ response.latency_ms ?? '—' }} ms</dd>
+                          </div>
+                        </dl>
+                      }
+                    }
+                  }
+                </div>
+              }
+            </li>
+          }
+        </ul>
+      }
+    </app-card>
+
+    <app-card>
+      <div class="card__header">
+        <h2>AI Visibility</h2>
+        @if (visibility(); as vis) {
+          <app-badge [tone]="visibilityTone(vis.status)">{{ visibilityLabel(vis.status) }}</app-badge>
+        }
+      </div>
+
+      <p class="crawl-note">
+        Mention Rate = how often the brand appeared in successful AI responses.
+        Citation Rate = how often citation-like references were detected.
+        Position = where the brand was first mentioned in the response, not search ranking.
+        Semantic Match = deterministic lexical overlap between query and response.
+      </p>
+
+      @if (visibilityError(); as message) {
+        <p class="crawl-result crawl-result--failed">{{ message }}</p>
+      }
+
+      @if (calculatingVisibility()) {
+        <app-loading-state label="Calculating AI Visibility" />
+      } @else if (!visibilityLoaded()) {
+        <app-loading-state label="Loading AI Visibility" />
+      } @else if (!visibilityIsAvailable()) {
+        <app-empty-state
+          [compact]="true"
+          icon="dashboard"
+          title="AI Visibility not available"
+          description="Run AI Analysis, then Calculate AI Visibility. Unavailable is shown as — not zero."
+        />
+        @if (visibility(); as vis) {
+          <dl class="ai-visibility-coverage">
+            <div>
+              <dt>Total queries</dt>
+              <dd>{{ vis.total_queries }}</dd>
+            </div>
+            <div>
+              <dt>Successful responses</dt>
+              <dd>{{ vis.successful_responses }}</dd>
+            </div>
+            <div>
+              <dt>Failed responses</dt>
+              <dd>{{ vis.failed_responses }}</dd>
+            </div>
+            <div>
+              <dt>Response coverage</dt>
+              <dd>{{ ratePercent(vis.response_coverage) }}</dd>
+            </div>
+          </dl>
+          @if (vis.note) {
+            <p class="crawl-note">{{ vis.note }}</p>
+          }
+        }
+      } @else {
+        @if (visibility(); as vis) {
+        <div class="score-grid">
+          <div class="score-block">
+            <span class="score-block__label">AI Visibility</span>
+            <app-score [value]="vis.overall_score" />
+            @if (vis.status === 'PROVISIONAL') {
+              <app-badge tone="warning">Provisional</app-badge>
+            }
+          </div>
+        </div>
+
+        <div class="ai-visibility-metrics">
+          <h3 class="score-breakdown__title">Metrics</h3>
+          <dl class="ai-query__signals">
+            <div>
+              <dt>Mention Rate</dt>
+              <dd>{{ ratePercent(vis.metrics.mention_rate) }}</dd>
+            </div>
+            <div>
+              <dt>Citation Rate</dt>
+              <dd>{{ ratePercent(vis.metrics.citation_rate) }}</dd>
+            </div>
+            <div>
+              <dt>Position Score</dt>
+              <dd>{{ visibilityValue(vis.metrics.position_score) }}</dd>
+            </div>
+            <div>
+              <dt>Semantic Match</dt>
+              <dd>{{ visibilityValue(vis.metrics.semantic_score) }}</dd>
+            </div>
+          </dl>
+        </div>
+
+        <div class="ai-visibility-coverage">
+          <h3 class="score-breakdown__title">Coverage</h3>
+          <dl class="ai-query__signals">
+            <div>
+              <dt>Total queries</dt>
+              <dd>{{ vis.total_queries }}</dd>
+            </div>
+            <div>
+              <dt>Successful responses</dt>
+              <dd>{{ vis.successful_responses }}</dd>
+            </div>
+            <div>
+              <dt>Failed responses</dt>
+              <dd>{{ vis.failed_responses }}</dd>
+            </div>
+            <div>
+              <dt>Response coverage</dt>
+              <dd>{{ ratePercent(vis.response_coverage) }}</dd>
+            </div>
+          </dl>
+        </div>
+
+        @if (vis.note) {
+          <p class="crawl-note">{{ vis.note }}</p>
+        }
+        }
+      }
+    </app-card>
+
+    <app-card>
+      <div class="card__header">
+        <h2>Entity Intelligence</h2>
+        @if (entity(); as ent) {
+          <app-badge [tone]="entityTone(ent.status)">{{ entityLabel(ent.status) }}</app-badge>
+        }
+      </div>
+
+      <p class="crawl-note">
+        Entity Strength measures how clearly and consistently the brand appears as a distinct
+        entity across crawled website signals and analyzed AI responses.
+      </p>
+      <p class="crawl-note">
+        This score evaluates signals found on the audited website and analyzed AI responses.
+        It does not verify Google Knowledge Graph, Wikidata, Wikipedia, or third-party entity databases.
+      </p>
+
+      @if (entityError(); as message) {
+        <p class="crawl-result crawl-result--failed">{{ message }}</p>
+      }
+
+      @if (calculatingEntity()) {
+        <app-loading-state label="Calculating Entity Strength" />
+      } @else if (!entityLoaded()) {
+        <app-loading-state label="Loading Entity Intelligence" />
+      } @else if (!entityIsAvailable()) {
+        <app-empty-state
+          [compact]="true"
+          icon="dashboard"
+          title="Entity Strength not available"
+          description="Crawl the website and/or run AI Analysis, then Calculate Entity. Unavailable is shown as — not zero."
+        />
+        @if (entity(); as ent) {
+          <dl class="ai-query__signals">
+            <div>
+              <dt>Pages analyzed</dt>
+              <dd>{{ ent.evidence.analyzable_pages }}</dd>
+            </div>
+            <div>
+              <dt>AI responses</dt>
+              <dd>{{ ent.evidence.successful_ai_responses }}</dd>
+            </div>
+          </dl>
+        }
+      } @else {
+        @if (entity(); as ent) {
+          <div class="score-grid">
+            <div class="score-block">
+              <span class="score-block__label">Entity Strength</span>
+              <app-score [value]="ent.overall_score" />
+              @if (ent.status === 'PROVISIONAL') {
+                <app-badge tone="warning">Provisional</app-badge>
+              }
+            </div>
+          </div>
+
+          <div class="score-breakdown">
+            <h3 class="score-breakdown__title">Components</h3>
+            <ul class="score-breakdown__list">
+              @for (component of ent.component_details; track component.name) {
+                <li>
+                  <span>
+                    {{ entityComponentLabel(component.name) }}
+                    @if (component.effective_weight !== null) {
+                      <span class="crawl-note">
+                        ({{ entityValue(component.effective_weight * 100) }}% effective · n={{ component.sample_size }})
+                      </span>
+                    } @else {
+                      <span class="crawl-note">(unavailable · n={{ component.sample_size }})</span>
+                    }
+                  </span>
+                  @if (component.score === null) {
+                    <span>—</span>
+                  } @else {
+                    <app-score [value]="component.score" />
+                  }
+                </li>
+              }
+            </ul>
+          </div>
+
+          <div class="ai-visibility-coverage">
+            <h3 class="score-breakdown__title">Evidence</h3>
+            <dl class="ai-query__signals">
+              <div>
+                <dt>Pages analyzed</dt>
+                <dd>{{ ent.evidence.analyzable_pages }}</dd>
+              </div>
+              <div>
+                <dt>Brand in title</dt>
+                <dd>{{ ent.evidence.pages_with_brand_in_title }}</dd>
+              </div>
+              <div>
+                <dt>Entity schema pages</dt>
+                <dd>{{ ent.evidence.pages_with_entity_schema }}</dd>
+              </div>
+              <div>
+                <dt>AI responses</dt>
+                <dd>{{ ent.evidence.successful_ai_responses }}</dd>
+              </div>
+              <div>
+                <dt>Responses mentioning brand</dt>
+                <dd>{{ ent.evidence.responses_mentioning_brand }}</dd>
+              </div>
+              <div>
+                <dt>Avg mention position</dt>
+                <dd>{{ entityValue(ent.evidence.average_mention_position) }}</dd>
+              </div>
+            </dl>
+          </div>
+
+          @for (note of ent.notes; track note) {
+            <p class="crawl-note">{{ note }}</p>
+          }
+        }
+      }
+    </app-card>
+
+    <app-card>
+      <div class="card__header">
+        <h2>Recommendations</h2>
+        @if (recommendationsLoaded()) {
+          <app-badge tone="neutral">{{ recommendationsTotal() }}</app-badge>
+        }
+      </div>
+
+      <p class="crawl-note">
+        Prioritized actions derived from analyzed SEO findings, website health, AI Visibility,
+        and Entity Intelligence. Based on analyzed evidence — not guaranteed outcomes.
+      </p>
+
+      @if (recommendationsMessage(); as message) {
+        <p class="crawl-result">{{ message }}</p>
+      }
+      @if (recommendationsError(); as message) {
+        <p class="crawl-result crawl-result--failed">{{ message }}</p>
+      }
+
+      @if (calculatingRecommendations()) {
+        <app-loading-state label="Calculating recommendations" />
+      } @else if (!recommendationsLoaded()) {
+        <app-loading-state label="Loading recommendations" />
+      } @else if (recommendationsTotal() === 0) {
+        <app-empty-state
+          [compact]="true"
+          [headingLevel]="3"
+          icon="dashboard"
+          title="No recommendations yet."
+          description="Calculate recommendations after crawl, SEO analysis, and optional AI Visibility or Entity Intelligence scores."
+        />
+      } @else {
+        <ul class="seo-findings">
+          @for (item of recommendations(); track item.id) {
+            <li class="seo-finding">
+              <div class="seo-finding__meta">
+                <app-badge [tone]="priorityTone(item.priority)">{{ priorityLabel(item.priority) }}</app-badge>
+                <app-badge tone="neutral">{{ categoryLabel(item.category) }}</app-badge>
+              </div>
+              <p class="seo-finding__title">{{ item.title }}</p>
+              @if (item.description) {
+                <p class="seo-finding__text">{{ item.description }}</p>
+              }
+              <dl class="ai-query__signals">
+                <div>
+                  <dt>Estimated impact</dt>
+                  <dd>{{ scoreValue(item.impact_score) }}</dd>
+                </div>
+                <div>
+                  <dt>Estimated effort</dt>
+                  <dd>{{ scoreValue(item.effort_score) }}</dd>
+                </div>
+              </dl>
+            </li>
+          }
+        </ul>
+      }
+    </app-card>
+  </div>
+  }
+}

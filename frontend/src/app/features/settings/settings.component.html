@@ -1,0 +1,55 @@
+<app-page-header title="Settings" description="Manage your workspace preferences." />
+
+<app-tabs [tabs]="tabs" label="Settings sections" [activeId]="activeTab()" (activeIdChange)="activeTab.set($event)" />
+
+<div [id]="'panel-' + activeTab()" role="tabpanel" [attr.aria-labelledby]="'tab-' + activeTab()" tabindex="0">
+  @switch (activeTab()) {
+    @case ('profile') {
+      <app-card>
+        <div class="settings__panel">
+          <div class="card__header">
+            <h2>Profile</h2>
+            <app-badge tone="neutral">Coming soon</app-badge>
+          </div>
+          <p class="settings__copy">
+            Profile editing arrives in a future phase. The details below are read from your current session.
+          </p>
+          <form class="settings__grid" [formGroup]="profileForm">
+            <app-input label="Full name" formControlName="full_name" />
+            <app-input label="Email" type="email" formControlName="email" />
+          </form>
+        </div>
+      </app-card>
+    }
+    @case ('appearance') {
+      <app-card>
+        <div class="settings__panel">
+          <div class="card__header">
+            <h2>Appearance</h2>
+          </div>
+          <p class="settings__copy">
+            Choose a light or dark workspace. Your choice is saved on this device. The workspace is using
+            {{ themeLabel(theme()) }} mode.
+          </p>
+          <form class="settings__control" [formGroup]="appearanceForm">
+            <app-select label="Theme" formControlName="theme" [options]="themeOptions" />
+          </form>
+        </div>
+      </app-card>
+    }
+    @case ('security') {
+      <app-card>
+        <div class="card__header">
+          <h2>Security</h2>
+          <app-badge tone="neutral">Coming soon</app-badge>
+        </div>
+        <app-empty-state
+          icon="settings"
+          title="Coming in a future phase"
+          description="Password changes and session controls will be available in a later release."
+          [compact]="true"
+        />
+      </app-card>
+    }
+  }
+</div>

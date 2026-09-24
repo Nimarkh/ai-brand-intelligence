@@ -1,0 +1,147 @@
+<div class="ask" [attr.aria-busy]="status() === 'loading' || sending()">
+  <app-page-header
+    title="Ask Intelligence"
+    description="Analyze your brand intelligence data using natural language."
+  >
+    @if (status() === 'ready' && audits().length > 0) {
+      <button
+        appButton
+        type="button"
+        variant="ghost"
+        (click)="clearConversation()"
+        [disabled]="messages().length === 0"
+      >
+        Clear conversation
+      </button>
+    }
+  </app-page-header>
+
+  @if (status() === 'loading') {
+    <div class="ask-skeleton" role="status" aria-label="Loading Ask Intelligence">
+      <p class="visually-hidden">Loading Ask Intelligence</p>
+      <span class="skeleton__line skeleton__line--sm"></span>
+      <span class="skeleton__line skeleton__line--lg"></span>
+      <span class="skeleton__line"></span>
+    </div>
+  } @else if (status() === 'error') {
+    <app-error-state
+      title="Unable to open Ask Intelligence"
+      message="We couldn't load your audits. Please try again."
+      retryLabel="Try again"
+      (retry)="reload()"
+    />
+    @if (httpStatus() === 404) {
+      <p class="ask-recovery">
+        <a routerLink="/intelligence-chat">Show your latest audit</a>
+      </p>
+    }
+  } @else if (audits().length === 0) {
+    <app-empty-state
+      icon="chat"
+      title="Ask Intelligence needs an audit to work with."
+      description="Create a brand and run an audit to start asking questions."
+    >
+      <a appButton variant="primary" routerLink="/brands/new">Add brand</a>
+      <a appButton variant="secondary" routerLink="/brands">Open brands</a>
+    </app-empty-state>
+  } @else if (activeAudit()) {
+    @if (activeAudit(); as audit) {
+    <section class="ask-workspace">
+      <div class="ask-toolbar">
+        <label class="ask-audit">
+          <span class="ask-audit__label" id="ask-audit-label">Audit</span>
+          <select
+            class="ask-audit__select"
+            aria-labelledby="ask-audit-label"
+            [value]="audit.id"
+            (change)="onAuditChange(selectValue($event))"
+          >
+            @for (option of audits(); track option.id) {
+              <option [value]="option.id">{{ auditOptionLabel(option) }}</option>
+            }
+          </select>
+        </label>
+        <div class="ask-context" aria-label="Analyzing">
+          <p class="ask-context__label">Analyzing</p>
+          <p class="ask-context__brand">{{ audit.brand_name }}</p>
+          <p class="ask-context__date">
+            Audit — {{ formatAuditDate(audit.completed_at ?? audit.created_at) }}
+          </p>
+        </div>
+      </div>
+
+      <div class="ask-thread" aria-live="polite">
+        @if (messages().length === 0) {
+          <section class="ask-suggestions" aria-label="Suggested questions">
+            <h2>Suggested questions</h2>
+            <p>Start from the audit you selected. Each question is sent on its own.</p>
+            <div class="ask-suggestions__list">
+              @for (question of suggestions; track question) {
+                <button type="button" class="ask-suggestion" (click)="askSuggestion(question)">
+                  {{ question }}
+                </button>
+              }
+            </div>
+          </section>
+        } @else {
+          <ol class="ask-messages">
+            @for (message of messages(); track message.id) {
+              <li class="ask-message" [class.ask-message--user]="message.role === 'user'" [class.ask-message--assistant]="message.role === 'assistant'">
+                <p class="ask-message__role">{{ message.role === 'user' ? 'You' : 'Intelligence' }}</p>
+                @if (message.status === 'pending') {
+                  <p class="ask-message__pending">Analyzing your audit…</p>
+                } @else if (message.status === 'error') {
+                  <p class="ask-message__error">We couldn't complete the analysis.</p>
+                  <p class="ask-message__error">Please try again.</p>
+                  <button appButton type="button" variant="secondary" (click)="retry(message.id)">Retry</button>
+                } @else {
+                  <p class="ask-message__body">{{ message.content }}</p>
+                  @if (message.role === 'assistant') {
+                    <div class="ask-evidence">
+                      <p class="ask-evidence__title">Evidence</p>
+                      @if (message.sources?.length) {
+                        <ul class="ask-evidence__list">
+                          @for (source of message.sources; track source.type + source.id + source.label) {
+                            <li class="ask-evidence__card">
+                              <p class="ask-evidence__type">{{ evidenceTypeLabel(source.type) }}</p>
+                              <p class="ask-evidence__label">{{ source.label }}</p>
+                            </li>
+                          }
+                        </ul>
+                      } @else {
+                        <p class="ask-evidence__empty">No direct evidence was available for this answer.</p>
+                      }
+                    </div>
+                  }
+                }
+              </li>
+            }
+          </ol>
+        }
+      </div>
+
+      <form class="ask-composer" (submit)="onSubmit($event)">
+        <label class="visually-hidden" for="ask-question">Ask about this audit</label>
+        <textarea
+          id="ask-question"
+          class="ask-composer__input"
+          rows="3"
+          placeholder="Ask about this audit..."
+          [value]="draft()"
+          [disabled]="sending()"
+          [attr.maxlength]="questionMax + 1"
+          [attr.aria-invalid]="validationMessage() ? true : null"
+          (input)="onDraft($event)"
+          (keydown.enter)="onEnter($event)"
+        ></textarea>
+        <div class="ask-composer__actions">
+          @if (validationMessage(); as validation) {
+            <p class="ask-composer__error" role="alert">{{ validation }}</p>
+          }
+          <button appButton type="submit" variant="primary" [disabled]="sendDisabled()">Send</button>
+        </div>
+      </form>
+    </section>
+    }
+  }
+</div>

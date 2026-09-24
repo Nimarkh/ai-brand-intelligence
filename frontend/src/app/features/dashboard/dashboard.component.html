@@ -1,0 +1,258 @@
+<div class="dashboard" [attr.aria-busy]="status() === 'loading'">
+  <app-page-header
+    [title]="greeting()"
+    description="Website health, SEO, AI Visibility, entity strength, and what to work on next."
+  >
+    <div class="dashboard__header-actions">
+      @if (status() === 'ready' && overview(); as data) {
+        @if (data.brands.length > 1) {
+          <label class="dashboard__brand-filter">
+            <span class="visually-hidden">Brand</span>
+            <select
+              class="dashboard__brand-select"
+              [ngModel]="selectedBrandId()"
+              (ngModelChange)="onBrandChange($event)"
+            >
+              <option value="">All Brands</option>
+              @for (brand of data.brands; track brand.id) {
+                <option [value]="brand.id">{{ brand.name }}</option>
+              }
+            </select>
+          </label>
+        }
+      }
+      <button
+        appButton
+        type="button"
+        variant="secondary"
+        [loading]="refreshing()"
+        [disabled]="status() === 'loading'"
+        (click)="load()"
+      >
+        Refresh
+      </button>
+    </div>
+  </app-page-header>
+
+  @if (status() === 'loading') {
+    <div class="dashboard-skeleton" role="status" aria-label="Loading dashboard">
+      <p class="visually-hidden">Loading dashboard</p>
+      <div class="dashboard-skeleton__hero"></div>
+      <div class="dashboard-skeleton__stats">
+        @for (card of [1, 2, 3, 4]; track card) {
+          <div class="dashboard-skeleton__card">
+            <span class="skeleton__line skeleton__line--sm"></span>
+            <span class="skeleton__line skeleton__line--lg"></span>
+          </div>
+        }
+      </div>
+      <div class="dashboard-skeleton__columns">
+        <div class="dashboard-skeleton__panel">
+          <span class="skeleton__line skeleton__line--lg"></span>
+          <span class="skeleton__line"></span>
+          <span class="skeleton__line"></span>
+        </div>
+        <div class="dashboard-skeleton__panel">
+          <span class="skeleton__line skeleton__line--lg"></span>
+          <span class="skeleton__line"></span>
+        </div>
+      </div>
+    </div>
+  } @else if (status() === 'error') {
+    <app-error-state
+      title="Unable to load dashboard"
+      message="We couldn't load your dashboard. Please try again."
+      retryLabel="Try again"
+      (retry)="load()"
+    />
+  } @else {
+    @if (overview(); as data) {
+    @if (isEmptyWorkspace()) {
+      <app-card>
+        <app-empty-state
+          icon="brands"
+          title="No brands yet."
+          description="Create your first brand to start analyzing its website and AI Visibility."
+        >
+          <a appButton variant="primary" routerLink="/brands/new">Add brand</a>
+        </app-empty-state>
+      </app-card>
+    } @else if (hasBrandNoAudit()) {
+      <section class="dashboard__workspace" aria-label="Workspace">
+        <app-card>
+          <div class="card__header">
+            <h2>Workspace</h2>
+          </div>
+          <p class="dashboard__lede">
+            You have {{ data.workspace.brand_count }}
+            {{ data.workspace.brand_count === 1 ? 'brand' : 'brands' }} and no audits yet.
+            Create an audit from a brand page to calculate intelligence scores.
+          </p>
+          <div class="dashboard__cta-row">
+            <a appButton variant="primary" routerLink="/brands">Open brands</a>
+            <a appButton variant="secondary" routerLink="/brands/new">Add brand</a>
+          </div>
+        </app-card>
+      </section>
+    } @else {
+      <section class="dashboard__workspace-counts" aria-label="Workspace counts">
+        <p>
+          <strong>{{ data.workspace.brand_count }}</strong> brands ·
+          <strong>{{ data.workspace.audit_count }}</strong> audits ·
+          <strong>{{ data.workspace.completed_audit_count }}</strong> completed
+        </p>
+      </section>
+
+      <section class="dashboard__overall" aria-label="Overall intelligence">
+        <app-dashboard-overall-score [overall]="data.scores.overall" />
+      </section>
+
+      <section class="dashboard__scores" aria-label="Core scores">
+        <app-dashboard-score-card
+          title="Website Health"
+          [card]="data.scores.website"
+          [formattedDate]="formatCardDate(data.scores.website)"
+        />
+        <app-dashboard-score-card
+          title="SEO"
+          [card]="data.scores.seo"
+          [formattedDate]="formatCardDate(data.scores.seo)"
+        />
+        <app-dashboard-score-card
+          title="AI Visibility"
+          [card]="data.scores.ai_visibility"
+          [formattedDate]="formatCardDate(data.scores.ai_visibility)"
+        />
+        <app-dashboard-score-card
+          title="Entity Strength"
+          [card]="data.scores.entity"
+          [formattedDate]="formatCardDate(data.scores.entity)"
+        />
+      </section>
+
+      <div class="dashboard__columns">
+        <div class="dashboard__main-col">
+          @if (hasSnapshotMetrics(data)) {
+            <app-card>
+              <div class="card__header">
+                <h2>Intelligence snapshot</h2>
+              </div>
+              <div class="dash-snapshot">
+                @if (data.snapshot.pages_crawled !== null) {
+                  <app-dashboard-metric-row label="Pages crawled" [value]="data.snapshot.pages_crawled" />
+                }
+                @if (data.snapshot.seo_findings !== null) {
+                  <app-dashboard-metric-row label="SEO findings" [value]="data.snapshot.seo_findings" />
+                }
+                @if (data.snapshot.high_severity_findings !== null) {
+                  <app-dashboard-metric-row
+                    label="High-severity findings"
+                    [value]="data.snapshot.high_severity_findings"
+                  />
+                }
+                @if (data.snapshot.ai_queries !== null) {
+                  <app-dashboard-metric-row label="AI queries analyzed" [value]="data.snapshot.ai_queries" />
+                }
+                @if (data.snapshot.ai_response_coverage !== null) {
+                  <div class="dash-metric-row">
+                    <span class="dash-metric-row__label">AI response coverage</span>
+                    <span class="dash-metric-row__value">{{ coverage(data.snapshot.ai_response_coverage) }}</span>
+                  </div>
+                }
+                @if (data.snapshot.ai_mention_rate !== null) {
+                  <div class="dash-metric-row">
+                    <span class="dash-metric-row__label">AI mention rate</span>
+                    <span class="dash-metric-row__value">{{ coverage(data.snapshot.ai_mention_rate) }}</span>
+                  </div>
+                }
+                @if (data.snapshot.entity_pages_analyzed !== null) {
+                  <app-dashboard-metric-row
+                    label="Entity pages analyzed"
+                    [value]="data.snapshot.entity_pages_analyzed"
+                  />
+                }
+                @if (data.snapshot.structured_identity_coverage !== null) {
+                  <div class="dash-metric-row">
+                    <span class="dash-metric-row__label">Structured identity coverage</span>
+                    <span class="dash-metric-row__value">
+                      {{ coverage(data.snapshot.structured_identity_coverage) }}
+                    </span>
+                  </div>
+                }
+                @if (data.snapshot.recommendations_total !== null) {
+                  <app-dashboard-metric-row
+                    label="Recommendations"
+                    [value]="data.snapshot.recommendations_total"
+                  />
+                }
+                @if (data.snapshot.recommendations_high !== null) {
+                  <app-dashboard-metric-row
+                    label="High priority"
+                    [value]="data.snapshot.recommendations_high"
+                  />
+                }
+                @if (data.snapshot.recommendations_medium !== null) {
+                  <app-dashboard-metric-row
+                    label="Medium priority"
+                    [value]="data.snapshot.recommendations_medium"
+                  />
+                }
+              </div>
+            </app-card>
+          }
+
+          <app-card>
+            <div class="card__header">
+              <h2>Key insights</h2>
+            </div>
+            @if (data.insights.length === 0) {
+              <app-empty-state
+                icon="audits"
+                title="No insights yet"
+                description="Insights appear when crawl, SEO, AI, entity, or recommendation data is available."
+                [compact]="true"
+              />
+            } @else {
+              <app-dashboard-insight-list [insights]="data.insights" />
+            }
+          </app-card>
+
+          <app-card>
+            <div class="card__header">
+              <h2>Recommendations</h2>
+            </div>
+            <app-dashboard-recommendation-preview
+              [recommendations]="data.recommendations"
+              [auditId]="data.selected_audit?.id ?? null"
+            />
+          </app-card>
+        </div>
+
+        <div class="dashboard__side-col">
+          <app-card>
+            <div class="card__header">
+              <h2>Recent audit</h2>
+            </div>
+            @if (data.selected_audit) {
+              <app-dashboard-audit-summary
+                [audit]="data.selected_audit"
+                [freshness]="data.freshness"
+              />
+            } @else {
+              <app-empty-state
+                icon="audits"
+                title="No audits yet."
+                description="Run an audit to generate intelligence for this brand."
+                [compact]="true"
+                [headingLevel]="3"
+              >
+                <a appButton variant="secondary" routerLink="/brands">View brands</a>
+              </app-empty-state>
+            }
+          </app-card>
+        </div>
+      </div>
+    }
+    }
+  }
+</div>

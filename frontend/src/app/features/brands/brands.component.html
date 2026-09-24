@@ -1,0 +1,50 @@
+<app-page-header
+  title="Brands"
+  description="Manage the brands you want to monitor and analyze."
+>
+  <a appButton variant="primary" routerLink="/brands/new">+ Add brand</a>
+</app-page-header>
+
+@if (status() === 'loading') {
+  <app-loading-state label="Loading brands" />
+} @else if (status() === 'error') {
+  <app-error-state
+    title="Couldn't load brands"
+    [message]="errorMessage()"
+    retryLabel="Try again"
+    (retry)="load()"
+  />
+} @else if (brands().length === 0) {
+  <app-empty-state
+    icon="brands"
+    title="No brands yet."
+    description="Create your first brand to start analyzing its website and AI Visibility."
+  >
+    <a appButton variant="primary" routerLink="/brands/new">Add brand</a>
+  </app-empty-state>
+} @else {
+  <ul class="brand-grid">
+    @for (brand of brands(); track brand.id) {
+      <li>
+        <a class="brand-card" [routerLink]="['/brands', brand.id]" [attr.aria-label]="'Open ' + brand.name">
+          <span class="brand-card__name">{{ brand.name }}</span>
+          @if (brand.website_url) {
+            <span class="brand-card__url">{{ brand.website_url }}</span>
+          }
+          <span class="brand-card__meta">
+            @if (brand.industry) {
+              <app-badge tone="info">{{ brand.industry }}</app-badge>
+            }
+            @if (brand.target_market) {
+              <app-badge>{{ brand.target_market }}</app-badge>
+            }
+          </span>
+          <span class="brand-card__foot">
+            <span>Created {{ formatDate(brand.created_at) }}</span>
+            <span class="brand-card__open">Open</span>
+          </span>
+        </a>
+      </li>
+    }
+  </ul>
+}

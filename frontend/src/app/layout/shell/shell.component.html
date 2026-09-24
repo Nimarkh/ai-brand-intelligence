@@ -1,0 +1,16 @@
+<div class="shell" [class.shell--drawer-open]="sidebar.mobileOpen()">
+  <a class="skip-link" href="#main-content">Skip to content</a>
+  <app-sidebar />
+  @if (sidebar.mobileOpen()) {
+    <button type="button" class="shell__backdrop" aria-label="Close navigation" (click)="sidebar.closeMobile()"></button>
+  }
+  <div class="shell__main">
+    <app-topbar />
+    <main id="main-content" class="shell__content" tabindex="-1">
+      <div class="shell__content-inner">
+        <router-outlet />
+      </div>
+    </main>
+  </div>
+  <app-toast-container />
+</div>
